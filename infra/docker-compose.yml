@@ -1,13 +1,13 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
     container_name: iam-postgres
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: iam_engine
       POSTGRES_USER: iam_user
-      POSTGRES_PASSWORD: iam_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -21,13 +21,13 @@ services:
   redis:
     image: redis:7
     container_name: iam-redis
-    command: redis-server --requirepass redis_password
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redis_password", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/iam_engine
     username: iam_user
-    password: iam_password
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   flyway:

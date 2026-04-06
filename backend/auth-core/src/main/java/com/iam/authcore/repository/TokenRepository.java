@@ -15,15 +15,15 @@ public interface TokenRepository extends JpaRepository<Token, String> {
     @Query("SELECT t FROM Token t WHERE t.subject = :subject AND t.revoked = false AND t.expiresAt > :now")
     List<Token> findActiveTokensBySubject(@Param("subject") String subject, @Param("now") Instant now);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Token t SET t.revoked = true WHERE t.jti = :jti")
     int revokeByJti(@Param("jti") String jti);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Token t SET t.revoked = true WHERE t.subject = :subject")
     int revokeAllBySubject(@Param("subject") String subject);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Token t WHERE t.expiresAt < :now")
     int deleteExpired(@Param("now") Instant now);
 }

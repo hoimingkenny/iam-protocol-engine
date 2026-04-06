@@ -10,11 +10,11 @@ import java.util.Optional;
 public interface AuthCodeRepository extends JpaRepository<AuthCode, String> {
     Optional<AuthCode> findByCodeAndConsumedAtIsNull(String code);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE AuthCode a SET a.consumedAt = :consumedAt WHERE a.code = :code")
     int markConsumed(String code, Instant consumedAt);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM AuthCode a WHERE a.expiresAt < :now")
     int deleteExpired(Instant now);
 }

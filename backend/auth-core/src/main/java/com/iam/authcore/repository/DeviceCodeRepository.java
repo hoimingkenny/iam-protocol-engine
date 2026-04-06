@@ -11,7 +11,7 @@ public interface DeviceCodeRepository extends JpaRepository<DeviceCode, String> 
     Optional<DeviceCode> findByUserCode(String userCode);
     Optional<DeviceCode> findByDeviceCodeAndStatus(String deviceCode, DeviceCode.Status status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM DeviceCode d WHERE d.expiresAt < :now")
     int deleteExpired(Instant now);
 }
