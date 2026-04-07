@@ -112,7 +112,7 @@ docker exec iam-postgres sed -i '$ a host all all 0.0.0.0/0 trust' /var/lib/post
 docker restart iam-postgres
 ```
 
-This is ephemeral — container restarts reset it. See [Docker Compose → macOS Docker Desktop](02-Docker-Compose.html#macos-docker-desktop--known-networking-issue) for full details.
+This is ephemeral — container restarts reset it. See [Docker Compose → macOS Docker Desktop](Docker-Compose#macos-docker-desktop--known-networking-issue) for full details.
 
 ### Flyway Maven command not configured
 
