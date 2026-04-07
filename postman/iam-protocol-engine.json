@@ -1,0 +1,529 @@
+{
+  "info": {
+    "name": "IAM Protocol Engine",
+    "description": "OAuth 2.0, OIDC, SAML 2.0, SCIM 2.0, WebAuthn, TOTP endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "client_id",
+      "value": "test-client"
+    },
+    {
+      "key": "client_secret",
+      "value": "test-secret"
+    },
+    {
+      "key": "redirect_uri",
+      "value": "http://localhost:3000/callback"
+    },
+    {
+      "key": "code_verifier",
+      "value": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Info",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/health",
+            "description": "Application health status"
+          }
+        },
+        {
+          "name": "Info",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/info",
+            "description": "Application info"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OAuth 2.0 + OIDC",
+      "item": [
+        {
+          "name": "Authorize (Auth Code + PKCE)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/authorize?client_id={{client_id}}&redirect_uri={{redirect_uri}}&response_type=code&scope=openid%20profile%20email&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256",
+              "host": ["{{baseUrl}}"],
+              "path": ["authorize"],
+              "query": [
+                { "key": "client_id", "value": "{{client_id}}", "description": "OAuth client ID" },
+                { "key": "redirect_uri", "value": "{{redirect_uri}}", "description": "Must exactly match registered redirect_uri" },
+                { "key": "response_type", "value": "code", "description": "Authorization Code flow" },
+                { "key": "scope", "value": "openid profile email", "description": "OIDC scopes" },
+                { "key": "state", "value": "xyz", "description": "CSRF protection state" },
+                { "key": "code_challenge", "value": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "description": "S256 PKCE challenge (SHA256 of code_verifier)" },
+                { "key": "code_challenge_method", "value": "S256", "description": "PKCE method - S256 only" }
+              ]
+            },
+            "description": "Start OAuth 2.0 Authorization Code + PKCE flow. Returns 302 redirect with auth code."
+          }
+        },
+        {
+          "name": "Token (Auth Code Exchange)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/token",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "authorization_code", "description": "" },
+                { "key": "code", "value": "AUTH_CODE_FROM_AUTHORIZE", "description": "Code received from /authorize redirect" },
+                { "key": "code_verifier", "value": "{{code_verifier}}", "description": "Original PKCE verifier (must match challenge)" },
+                { "key": "redirect_uri", "value": "{{redirect_uri}}", "description": "Must match original request" },
+                { "key": "client_id", "value": "{{client_id}}", "description": "" }
+              ]
+            },
+            "description": "Exchange authorization code for access token + refresh token + ID token. PKCE code_verifier is validated."
+          }
+        },
+        {
+          "name": "Token (Client Credentials)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/token",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" },
+              { "key": "Authorization", "value": "Basic {{client_id}}:{{client_secret}}", "description": "Basic auth with client_id:client_secret" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "client_credentials", "description": "" },
+                { "key": "scope", "value": "api:read api:write", "description": "Space-separated scopes (limited to client's allowed_scopes)" }
+              ]
+            },
+            "description": "Machine-to-machine token using client credentials. No user involved."
+          }
+        },
+        {
+          "name": "Token (Refresh)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/token",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "refresh_token", "description": "" },
+                { "key": "refresh_token", "value": "REFRESH_TOKEN", "description": "The refresh token from token response" },
+                { "key": "client_id", "value": "{{client_id}}", "description": "" }
+              ]
+            },
+            "description": "Rotate refresh token. Old token is invalidated atomically."
+          }
+        },
+        {
+          "name": "Token Introspection",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/introspect",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "token", "value": "ACCESS_TOKEN", "description": "Token to introspect" },
+                { "key": "token_type_hint", "value": "access_token", "description": "access_token or refresh_token" }
+              ]
+            },
+            "description": "RFC 7662 token introspection. Returns {active: true/false, sub, scope, exp...}"
+          }
+        },
+        {
+          "name": "Token Revocation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/revoke",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "token", "value": "TOKEN_TO_REVOKE", "description": "Token to revoke" },
+                { "key": "token_type_hint", "value": "access_token", "description": "access_token or refresh_token" }
+              ]
+            },
+            "description": "RFC 7009 token revocation. Token immediately becomes inactive."
+          }
+        },
+        {
+          "name": "OIDC Discovery",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/.well-known/openid-configuration",
+            "description": "RFC 8414 OIDC Provider Metadata. Returns issuer, endpoints, supported algorithms, etc."
+          }
+        },
+        {
+          "name": "JWKS",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/.well-known/jwks.json",
+            "description": "JSON Web Key Set. RSA public keys with kid, use=sig, alg=RS256."
+          }
+        },
+        {
+          "name": "UserInfo",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/userinfo",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Valid access token with openid scope" }
+            ],
+            "description": "OIDC claims endpoint. Returns claims consistent with ID token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "SCIM 2.0",
+      "item": [
+        {
+          "name": "Create User (Joinee)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/scim/v2/Users",
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:write scope" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"],\n  \"userName\": \"john.doe\",\n  \"name\": { \"givenName\": \"John\", \"familyName\": \"Doe\" },\n  \"emails\": [{ \"value\": \"john.doe@example.com\", \"primary\": true }],\n  \"active\": true\n}"
+            },
+            "description": "SCIM joiner flow. Creates user account."
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Users",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:read scope" }
+            ],
+            "description": "List all SCIM users with optional filtering"
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:read scope" }
+            ],
+            "description": "Get a specific SCIM user by ID"
+          }
+        },
+        {
+          "name": "Update User (Mover)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:write scope" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"],\n  \"userName\": \"john.doe.updated\",\n  \"name\": { \"givenName\": \"John\", \"familyName\": \"Doe\" },\n  \"emails\": [{ \"value\": \"john.doe.new@example.com\", \"primary\": true }],\n  \"active\": true\n}"
+            },
+            "description": "SCIM mover flow. Full user replacement."
+          }
+        },
+        {
+          "name": "Delete User (Leaver)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:write scope" }
+            ],
+            "description": "SCIM leaver flow. User deleted and all tokens revoked."
+          }
+        },
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/scim/v2/Groups",
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:write scope" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:Group\"],\n  \"displayName\": \"Engineering\",\n  \"members\": [{ \"value\": \"{{user_id}}\" }]\n}"
+            },
+            "description": "Create a SCIM group"
+          }
+        },
+        {
+          "name": "List Groups",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Groups",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:read scope" }
+            ],
+            "description": "List all SCIM groups"
+          }
+        },
+        {
+          "name": "Get Group",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Groups/{{group_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:read scope" }
+            ],
+            "description": "Get a specific SCIM group by ID"
+          }
+        },
+        {
+          "name": "Patch Group (Modify Membership)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/scim/v2/Groups/{{group_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Bearer token with scim:write scope" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"],\n  \"Operations\": [\n    { \"op\": \"add\", \"path\": \"members\", \"value\": [{ \"value\": \"{{user_id}}\" }] }\n  ]\n}"
+            },
+            "description": "RFC 7644 Section 4.3 PATCH. Add or remove group members."
+          }
+        }
+      ]
+    },
+    {
+      "name": "SAML 2.0",
+      "item": [
+        {
+          "name": "SP Metadata",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/saml/metadata",
+            "description": "SAML SP metadata XML (signed). Register this with your IdP."
+          }
+        },
+        {
+          "name": "Initiate SSO",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/saml/initiate?client_id={{client_id}}&redirect_uri={{redirect_uri}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["saml", "initiate"],
+              "query": [
+                { "key": "client_id", "value": "{{client_id}}", "description": "" },
+                { "key": "redirect_uri", "value": "{{redirect_uri}}", "description": "Where to redirect after SAML SSO" }
+              ]
+            },
+            "description": "Start SAML SP-initiated SSO. Redirects to IdP with signed AuthnRequest."
+          }
+        },
+        {
+          "name": "ACS (Assertion Consumer Service)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/saml/acs",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "SAMLResponse", "value": "BASE64_ENCODED_SAML_RESPONSE", "description": "Signed SAMLResponse from IdP" },
+                { "key": "RelayState", "value": "optional-state", "description": "Preserved state for post-auth redirect" }
+              ]
+            },
+            "description": "Receives SAMLResponse from IdP. Validates signature, audience, conditions, in-response-to. Maps claims to OIDC tokens."
+          }
+        }
+      ]
+    },
+    {
+      "name": "MFA",
+      "item": [
+        {
+          "name": "TOTP Setup (Begin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/mfa/totp/setup",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Authenticated user token" }
+            ],
+            "description": "Generate TOTP secret and provisioning URI. Returns QR code payload for authenticator app."
+          }
+        },
+        {
+          "name": "TOTP Verify",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/mfa/totp/verify",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\",\n  \"secret_encrypted\": \"BASE64_ENCODED_SECRET\"\n}"
+            },
+            "description": "Verify TOTP code. On success, TotpCredential.verified=true."
+          }
+        },
+        {
+          "name": "WebAuthn Register (Begin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/webauthn/register/begin",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Authenticated user token" }
+            ],
+            "description": "Generate WebAuthn registration challenge and options."
+          }
+        },
+        {
+          "name": "WebAuthn Register (Complete)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/webauthn/register/complete",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": {\n    \"id\": \"BASE64_CREDENTIAL_ID\",\n    \"rawId\": \"BASE64_RAW_CREDENTIAL_ID\",\n    \"response\": {\n      \"attestationObject\": \"BASE64_ATTESTATION_OBJECT\",\n      \"clientDataJSON\": \"BASE64_CLIENT_DATA_JSON\"\n    },\n    \"type\": \"public-key\"\n  },\n  \"challenge\": \"CHALLENGE_FROM_BEGIN\"\n}"
+            },
+            "description": "Store WebAuthn credential. WebAuthnCredential record created."
+          }
+        },
+        {
+          "name": "WebAuthn Authenticate (Begin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/webauthn/authenticate/begin",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "" }
+            ],
+            "description": "Generate WebAuthn authentication assertion challenge."
+          }
+        },
+        {
+          "name": "WebAuthn Authenticate (Complete)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/webauthn/authenticate/complete",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": {\n    \"id\": \"BASE64_CREDENTIAL_ID\",\n    \"rawId\": \"BASE64_RAW_CREDENTIAL_ID\",\n    \"response\": {\n      \"authenticatorData\": \"BASE64_AUTHENTICATOR_DATA\",\n      \"clientDataJSON\": \"BASE64_CLIENT_DATA_JSON\",\n      \"signature\": \"BASE64_SIGNATURE\",\n      \"userHandle\": \"BASE64_USER_HANDLE\"\n    },\n    \"type\": \"public-key\"\n  },\n  \"challenge\": \"CHALLENGE_FROM_BEGIN\"\n}"
+            },
+            "description": "Verify WebAuthn assertion. sign_count incremented on success."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Device Authorization Grant (RFC 8628)",
+      "item": [
+        {
+          "name": "Device Authorization Start",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/device_authorization",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "client_id", "value": "{{client_id}}", "description": "" },
+                { "key": "scope", "value": "openid profile", "description": "Space-separated scopes" }
+              ]
+            },
+            "description": "Start device flow. Returns device_code, user_code, verification_uri. User code expires in 10min."
+          }
+        },
+        {
+          "name": "Device Approval Page",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/device?user_code=USER_CODE",
+              "host": ["{{baseUrl}}"],
+              "path": ["device"],
+              "query": [
+                { "key": "user_code", "value": "USER_CODE", "description": "User code from device_authorization response" }
+              ]
+            },
+            "description": "Human approval page for device flow. User enters user_code and approves."
+          }
+        },
+        {
+          "name": "Token (Device Code Polling)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/token",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "urn:ietf:params:oauth:grant-type:device_code", "description": "" },
+                { "key": "device_code", "value": "DEVICE_CODE", "description": "From device_authorization response" },
+                { "key": "client_id", "value": "{{client_id}}", "description": "" }
+              ]
+            },
+            "description": "Poll for device code approval. Returns authorization_pending until approved, then issues tokens. Rate limited."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Demo Resource (Protected API)",
+      "item": [
+        {
+          "name": "Protected Resource",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/resource",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "description": "Valid access token" }
+            ],
+            "description": "Protected endpoint. Validates Bearer token against DB. Returns 401 if missing/invalid/expired/revoked."
+          }
+        }
+      ]
+    }
+  ]
+}
