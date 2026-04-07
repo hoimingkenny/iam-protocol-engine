@@ -184,6 +184,27 @@ Frontend Admin UI (can start after oauth-oidc)
 
 ---
 
+### Learning Site: Phase 1 Chapters
+
+**Location:** `frontend/app/` (Docusaurus)
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+Chapters written alongside Phase 1 code:
+
+| Chapter | Source |
+|---------|--------|
+| `01-Bootstrap/00-Overview` | `doc/04. Phase 1 Code Change Summary.md` |
+| `01-Bootstrap/01-Maven-Modules` | Phase 1 task docs |
+| `01-Bootstrap/02-Docker-Compose` | Phase 1 task docs |
+| `01-Bootstrap/03-JPA-Entities` | Phase 1 task docs |
+| `01-Bootstrap/04-API-Gateway` | Phase 1 task docs |
+| `01-Bootstrap/05-Tests` | Phase 1 task docs |
+| `00-Introduction/01-Why-This-Project` | `doc/01. Product Brief.md` |
+
+Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, Implementation Plan.
+
+---
+
 ### Phase 2: OAuth 2.0 Core
 
 **Goal:** Auth Code + PKCE and Client Credentials flows fully functional.
