@@ -1,0 +1,110 @@
+---
+title: Why This Project
+sidebar_position: 1
+description: The vision behind IAM Protocol Engine — why build it, who it's for, and what makes it different from a vendor configuration project.
+---
+
+# Why This Project
+
+> A portfolio-grade enterprise IAM platform demo that shows how modern authentication, federation, and provisioning actually work in real life.
+
+---
+
+## The Problem
+
+Most IAM portfolio projects prove configuration skill, not protocol understanding. A typical project shows Keycloak or another vendor product configured for login, but it does not show why the protocol behaves that way or what security decisions matter underneath.
+
+This project fixes that gap by building the protocol surface directly and making the decisions visible.
+
+---
+
+## Why This Is Worth Building
+
+- It creates a much stronger signal than a CRUD app with SSO attached
+- It directly supports IAM architect and senior engineer interviews
+- It turns protocol knowledge into something demonstrable, not just theoretical
+- It connects closely to real enterprise work in banking, SaaS, and IGA environments
+
+---
+
+## Why Not Just Use Keycloak
+
+> "Keycloak already does all of this. Why build it?"
+
+This is the right question — and the answer is the entire point of the project.
+
+| Dimension | Using Keycloak | Building This Project |
+|-----------|---------------|----------------------|
+| What you learn | Admin UI, realm config, client settings | `/authorize` logic, PKCE validation, token signing, SAML assertion handling |
+| What you can explain | "I configured a client in Keycloak" | "I built the endpoint, here is why PKCE prevents auth code interception" |
+| Protocol depth | Hidden behind the product | Fully visible and deliberately built |
+| Interview signal | Configuration skill | Protocol and security decision-making |
+| Debugging skill | Reading Keycloak logs | Understanding what went wrong at the RFC level |
+| Differentiator | Every IAM candidate has done this | Very few candidates have done this |
+
+Keycloak is a production-grade platform used in real enterprise environments. That is exactly why configuring it is table stakes — not a differentiator.
+
+> The point is not to replace Keycloak. The point is to understand what Keycloak is actually doing underneath. This project builds the protocol surface so the behaviour is no longer a black box.
+
+Keycloak is also used in this project — as a backup local IdP for SAML testing when Entra ID is unavailable. That is the right use of it: a reference implementation and test peer, not a crutch that hides the work.
+
+---
+
+## What The Product Actually Is
+
+This is a single demo platform with:
+
+- User login and token issuance with `OAuth 2.0` and `OIDC`
+- Enterprise federation with `SAML 2.0`
+- Account provisioning with `SCIM 2.0`
+- Admin and audit views through a React UI
+- A protected demo API to prove the tokens are usable
+
+It is not trying to replace Okta, Entra ID, Ping, or SailPoint. It is trying to expose the protocol mechanics those platforms rely on.
+
+---
+
+## Real-World Use Cases
+
+### OAuth 2.0
+
+- Web app to API authorization
+- Service-to-service API access
+- CLI or device login through device flow
+
+### OIDC
+
+- Workforce sign-in for modern web apps
+- Identity claims via ID token
+- Federation into apps that expect modern token-based login
+
+### SAML
+
+- Workforce SSO into legacy enterprise applications
+- Federation between organizations
+- Enterprise IdP to app login where OIDC is not the upstream protocol
+
+### SCIM
+
+- Joiner / mover / leaver automation
+- User and group provisioning from IGA tools like SailPoint
+- SaaS account lifecycle synchronization
+
+---
+
+## Protocol vs Product
+
+> Entra ID is not a protocol. It is a product and identity platform.
+
+Use this distinction:
+
+- **Protocols / standards:** `OAuth 2.0`, `OIDC`, `SAML`, `SCIM`, `LDAP`
+- **Products / platforms:** `Entra ID`, `Okta`, `Ping`, `Keycloak`, `SailPoint`
+
+Interviews often expect you to distinguish the standard from the vendor platform. This project teaches you to speak both languages.
+
+---
+
+## Status
+
+**Phase 1 (Bootstrap) — Complete.** The skeleton, infrastructure, entities, and API gateway are built. Phase 2 (OAuth 2.0 Core) is next.

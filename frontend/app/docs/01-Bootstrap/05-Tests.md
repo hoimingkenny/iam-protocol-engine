@@ -1,0 +1,76 @@
+---
+title: Phase 1 Tests
+sidebar_position: 6
+description: The 16 tests that verify Phase 1 — entity unit tests and Spring application context tests, all passing.
+---
+
+# Phase 1 Tests
+
+**Total: 16 tests, all passing**
+
+## Test Files
+
+| File | Tests | Description |
+|------|-------|-------------|
+| `OAuthClientTest` | 3 | `hashSecret()`, `matchesSecret()`, `toString()` |
+| `TokenTest` | 4 | `calculateExpiry()`, `isExpired()`, `isValid()` |
+| `ScimUserTest` | 3 | `setEmails()` (list→comma-string), `setGroups()`, `toScimSchema()` |
+| `AuditEventTest` | 3 | `toMap()` (JSONB serialization) |
+| `ApiGatewayApplicationTest` | 3 | Spring context loads, actuator health returns UP |
+
+## Test Configuration
+
+### `@ActiveProfiles("test")`
+
+Activates `src/test/resources/application.yml` with H2 in-memory database. PostgreSQL is not required for tests.
+
+```yaml
+# src/test/resources/application.yml
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # H2 creates schema from entities
+  flyway:
+    enabled: false           # No Flyway in tests
+```
+
+### Explicit Test Configuration Classes
+
+```java
+@SpringBootTest(classes = AuthCoreTestApplication.class)
+@ActiveProfiles("test")
+class OAuthClientTest { }
+```
+
+`AuthCoreTestApplication` is a minimal `@Configuration` class that provides the beans needed for testing, avoiding full component scan in test context.
+
+### `@MockBean` for Redis
+
+Redis is not available in the test environment, so it's mocked:
+
+```java
+@MockBean
+private RedisTemplate<String, Object> redisTemplate;
+```
+
+## Running Tests
+
+```bash
+./mvnw test                                    # All modules
+./mvnw test -pl backend/auth-core              # auth-core only
+./mvnw test -pl backend/api-gateway            # api-gateway only
+```
+
+## Test Results
+
+```
+OAuthClientTest         3 tests  ✓
+TokenTest              4 tests  ✓
+ScimUserTest           3 tests  ✓
+AuditEventTest         3 tests  ✓
+ApiGatewayApplicationTest  3 tests  ✓
+────────────────────────────────
+Total:                16 tests  ✓  BUILD SUCCESS
+```
