@@ -14,6 +14,15 @@ const sidebars: SidebarsConfig = {
     'Bootstrap/Tests',
   ],
 
+  oauth2: [
+    'OAuth2/Overview',
+    'OAuth2/PKCE',
+    'OAuth2/Authorize-Endpoint',
+    'OAuth2/Token-Endpoint',
+    'OAuth2/Client-Credentials',
+    'OAuth2/Demo-Resource',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',
