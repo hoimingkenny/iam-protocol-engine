@@ -1,10 +1,15 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "device_code")
+@Getter
+@Setter
 public class DeviceCode {
 
     public enum Status {
@@ -44,22 +49,4 @@ public class DeviceCode {
     protected void onCreate() {
         this.createdAt = Instant.now();
     }
-
-    public String getDeviceCode() { return deviceCode; }
-    public void setDeviceCode(String deviceCode) { this.deviceCode = deviceCode; }
-    public String getUserCode() { return userCode; }
-    public void setUserCode(String code) { this.userCode = code; }
-    public String getClientId() { return clientId; }
-    public void setClientId(String clientId) { this.clientId = clientId; }
-    public String getScope() { return scope; }
-    public void setScope(String scope) { this.scope = scope; }
-    public Status getStatus() { return status; }
-    public void setStatus(Status status) { this.status = status; }
-    public Instant getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
-    public String getApprovedBy() { return approvedBy; }
-    public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
-    public Integer getPollingCount() { return pollingCount; }
-    public void setPollingCount(Integer count) { this.pollingCount = count; }
-    public Instant getCreatedAt() { return createdAt; }
 }

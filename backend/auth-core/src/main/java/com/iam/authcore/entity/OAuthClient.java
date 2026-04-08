@@ -1,10 +1,14 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
 
 @Entity
 @Table(name = "oauth_client")
+@Getter
+@Setter
 public class OAuthClient {
 
     @Id
@@ -46,21 +50,4 @@ public class OAuthClient {
     protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
-
-    public String getClientId() { return clientId; }
-    public void setClientId(String clientId) { this.clientId = clientId; }
-    public String getClientSecretHash() { return clientSecretHash; }
-    public void setClientSecretHash(String hash) { this.clientSecretHash = hash; }
-    public String getClientName() { return clientName; }
-    public void setClientName(String name) { this.clientName = name; }
-    public String getRedirectUris() { return redirectUris; }
-    public void setRedirectUris(String uris) { this.redirectUris = uris; }
-    public String getAllowedScopes() { return allowedScopes; }
-    public void setAllowedScopes(String scopes) { this.allowedScopes = scopes; }
-    public String getGrantTypes() { return grantTypes; }
-    public void setGrantTypes(String grants) { this.grantTypes = grants; }
-    public Boolean getIsPublic() { return isPublic; }
-    public void setIsPublic(Boolean isPublic) { this.isPublic = isPublic; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
 }

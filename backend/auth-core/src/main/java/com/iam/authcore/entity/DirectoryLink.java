@@ -1,11 +1,15 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "directory_link")
+@Getter
+@Setter
 public class DirectoryLink {
 
     @Id
@@ -37,18 +41,4 @@ public class DirectoryLink {
         this.createdAt = now;
         this.syncedAt = now;
     }
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public String getDirectorySource() { return directorySource; }
-    public void setDirectorySource(String source) { this.directorySource = source; }
-    public String getDirectoryDn() { return directoryDn; }
-    public void setDirectoryDn(String dn) { this.directoryDn = dn; }
-    public String getDirectoryGroups() { return directoryGroups; }
-    public void setDirectoryGroups(String groups) { this.directoryGroups = groups; }
-    public Instant getSyncedAt() { return syncedAt; }
-    public void setSyncedAt(Instant syncedAt) { this.syncedAt = syncedAt; }
-    public Instant getCreatedAt() { return createdAt; }
 }

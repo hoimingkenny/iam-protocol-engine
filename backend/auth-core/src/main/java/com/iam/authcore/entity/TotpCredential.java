@@ -1,11 +1,15 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "totp_credential")
+@Getter
+@Setter
 public class TotpCredential {
 
     @Id
@@ -38,15 +42,4 @@ public class TotpCredential {
     protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public byte[] getSecretEncrypted() { return secretEncrypted; }
-    public void setSecretEncrypted(byte[] secret) { this.secretEncrypted = secret; }
-    public Boolean getVerified() { return verified; }
-    public void setVerified(Boolean verified) { this.verified = verified; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
 }

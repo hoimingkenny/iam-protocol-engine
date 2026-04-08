@@ -1,10 +1,14 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
 
 @Entity
 @Table(name = "token")
+@Getter
+@Setter
 public class Token {
 
     public enum TokenType {
@@ -41,20 +45,4 @@ public class Token {
     protected void onCreate() {
         this.issuedAt = Instant.now();
     }
-
-    public String getJti() { return jti; }
-    public void setJti(String jti) { this.jti = jti; }
-    public TokenType getType() { return type; }
-    public void setType(TokenType type) { this.type = type; }
-    public String getClientId() { return clientId; }
-    public void setClientId(String clientId) { this.clientId = clientId; }
-    public String getSubject() { return subject; }
-    public void setSubject(String subject) { this.subject = subject; }
-    public String getScope() { return scope; }
-    public void setScope(String scope) { this.scope = scope; }
-    public Instant getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
-    public Boolean getRevoked() { return revoked; }
-    public void setRevoked(Boolean revoked) { this.revoked = revoked; }
-    public Instant getIssuedAt() { return issuedAt; }
 }

@@ -1,6 +1,8 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.Instant;
@@ -9,6 +11,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "audit_event")
+@Getter
+@Setter
 public class AuditEvent {
 
     @Id
@@ -51,26 +55,4 @@ public class AuditEvent {
     protected void onCreate() {
         this.timestamp = Instant.now();
     }
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
-    public String getActor() { return actor; }
-    public void setActor(String actor) { this.actor = actor; }
-    public String getSubject() { return subject; }
-    public void setSubject(String subject) { this.subject = subject; }
-    public String getClientId() { return clientId; }
-    public void setClientId(String clientId) { this.clientId = clientId; }
-    public String getScope() { return scope; }
-    public void setScope(String scope) { this.scope = scope; }
-    public String getJti() { return jti; }
-    public void setJti(String jti) { this.jti = jti; }
-    public String getIpAddress() { return ipAddress; }
-    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
-    public Map<String, Object> getDetails() { return details; }
-    public void setDetails(Map<String, Object> details) { this.details = details; }
-    public Instant getTimestamp() { return timestamp; }
 }

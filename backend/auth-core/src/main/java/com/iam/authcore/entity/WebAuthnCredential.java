@@ -1,11 +1,15 @@
 package com.iam.authcore.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "webauthn_credential")
+@Getter
+@Setter
 public class WebAuthnCredential {
 
     @Id
@@ -47,21 +51,4 @@ public class WebAuthnCredential {
     protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
-
-    public String getCredentialId() { return credentialId; }
-    public void setCredentialId(String credentialId) { this.credentialId = credentialId; }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public byte[] getPublicKeyCose() { return publicKeyCose; }
-    public void setPublicKeyCose(byte[] key) { this.publicKeyCose = key; }
-    public Long getSignCount() { return signCount; }
-    public void setSignCount(Long signCount) { this.signCount = signCount; }
-    public UUID getAaguid() { return aaguid; }
-    public void setAaguid(UUID aaguid) { this.aaguid = aaguid; }
-    public String getAttestationFormat() { return attestationFormat; }
-    public void setAttestationFormat(String format) { this.attestationFormat = format; }
-    public String getDeviceType() { return deviceType; }
-    public void setDeviceType(String deviceType) { this.deviceType = deviceType; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
 }
