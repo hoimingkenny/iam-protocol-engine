@@ -17,6 +17,15 @@
     <name>api-gateway</name>
     <description>Spring Boot entry point</description>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -33,6 +42,16 @@
         <dependency>
             <groupId>com.iam</groupId>
             <artifactId>auth-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>oauth-oidc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>demo-resource</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
