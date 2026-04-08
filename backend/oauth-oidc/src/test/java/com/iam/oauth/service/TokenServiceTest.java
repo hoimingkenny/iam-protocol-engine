@@ -8,6 +8,7 @@ import com.iam.authcore.repository.OAuthClientRepository;
 import com.iam.authcore.repository.TokenRepository;
 import com.iam.oauth.dto.TokenRequest;
 import com.iam.oauth.dto.TokenResponse;
+import com.iam.oauth.security.IdTokenGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,7 @@ class TokenServiceTest {
     private OAuthClientRepository clientRepo;
     private AuthCodeRepository authCodeRepo;
     private TokenRepository tokenRepo;
+    private IdTokenGenerator idTokenGenerator;
 
     private static final String CLIENT_ID = "client-1";
     private static final String CLIENT_SECRET = "top-secret";
@@ -39,7 +41,9 @@ class TokenServiceTest {
         clientRepo = mock(OAuthClientRepository.class);
         authCodeRepo = mock(AuthCodeRepository.class);
         tokenRepo = mock(TokenRepository.class);
-        service = new TokenService(clientRepo, authCodeRepo, tokenRepo);
+        idTokenGenerator = mock(IdTokenGenerator.class);
+        when(idTokenGenerator.generateIdToken(any(), any(), any())).thenReturn("dummy-id-token");
+        service = new TokenService(clientRepo, authCodeRepo, tokenRepo, idTokenGenerator);
     }
 
     private static String hashSecret(String secret) {

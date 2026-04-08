@@ -8,6 +8,7 @@ import com.iam.authcore.repository.OAuthClientRepository;
 import com.iam.authcore.repository.TokenRepository;
 import com.iam.oauth.dto.TokenRequest;
 import com.iam.oauth.dto.TokenResponse;
+import com.iam.oauth.security.IdTokenGenerator;
 import com.iam.oauth.util.PkceUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,14 +39,17 @@ public class TokenService {
     private final OAuthClientRepository clientRepo;
     private final AuthCodeRepository authCodeRepo;
     private final TokenRepository tokenRepo;
+    private final IdTokenGenerator idTokenGenerator;
     private final SecureRandom random = new SecureRandom();
 
     public TokenService(OAuthClientRepository clientRepo,
                         AuthCodeRepository authCodeRepo,
-                        TokenRepository tokenRepo) {
+                        TokenRepository tokenRepo,
+                        IdTokenGenerator idTokenGenerator) {
         this.clientRepo = clientRepo;
         this.authCodeRepo = authCodeRepo;
         this.tokenRepo = tokenRepo;
+        this.idTokenGenerator = idTokenGenerator;
     }
 
     /**
@@ -105,11 +109,19 @@ public class TokenService {
         tokenRepo.save(accessToken);
         tokenRepo.save(refreshToken);
 
-        return TokenResponse.success(
+        // 8. Issue ID token (OIDC Core 1.0 §3.1.3.3)
+        String idToken = idTokenGenerator.generateIdToken(
+            subject, authCode.getClientId(), authCode.getNonce());
+
+        return new TokenResponse(
             accessToken.getJti(),
-            refreshToken.getJti(),
+            "Bearer",
             ACCESS_TOKEN_TTL_SECONDS,
-            scope
+            refreshToken.getJti(),
+            idToken,
+            scope,
+            null,
+            null
         );
     }
 
