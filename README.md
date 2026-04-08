@@ -100,7 +100,7 @@ INSERT INTO oauth_client (
 ) VALUES (
     'test-client',
     -- SHA-256 of 'test-secret' in base64
-    'jQAi4xF+BNLzj/cxD5aHJ1M5qF8aLmP7bQ3vR6hX0Wk=',
+    'nK8Gu0Q2zb+iCvkSGmJrwQk8T1SzHA+pN5V4VhNTRbY=',
     'Test Client',
     'http://localhost:9000/callback',
     'openid profile email',
