@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -180,25 +179,18 @@ public class TokenService {
     // --- PKCE verification ---
 
     private boolean verifyPkce(AuthCode authCode, String codeVerifier, String clientId) {
-        // Look up client to determine if PKCE is required
         Optional<OAuthClient> optClient = clientRepo.findByClientId(clientId);
         if (optClient.isEmpty()) return false;
 
         OAuthClient client = optClient.get();
         boolean pkceRequired = client.getIsPublic();
 
-        String challenge = authCode.getCodeChallenge();
-        String method = authCode.getCodeChallengeMethod();
+        // Missing verifier is only acceptable when PKCE is optional
+        if (pkceRequired && (codeVerifier == null || codeVerifier.isBlank())) return false;
+        if (codeVerifier == null || codeVerifier.isBlank()) return true;
 
-        if (pkceRequired) {
-            // PKCE required for public clients — must verify
-            if (codeVerifier == null || codeVerifier.isBlank()) return false;
-            return PkceUtils.verifyCodeChallenge(codeVerifier, challenge, method);
-        } else {
-            // PKCE optional for confidential clients — if provided, verify; if absent, allow
-            if (codeVerifier == null || codeVerifier.isBlank()) return true;
-            return PkceUtils.verifyCodeChallenge(codeVerifier, challenge, method);
-        }
+        return PkceUtils.verifyCodeChallenge(codeVerifier,
+            authCode.getCodeChallenge(), authCode.getCodeChallengeMethod());
     }
 
     // --- Token creation helpers ---

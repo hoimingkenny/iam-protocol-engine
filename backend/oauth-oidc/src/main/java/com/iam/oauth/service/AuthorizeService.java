@@ -10,12 +10,13 @@ import com.iam.oauth.util.PkceUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Authorization endpoint logic per RFC 6749 §4.1 (Auth Code) and RFC 7636 (PKCE).
@@ -135,8 +136,8 @@ public class AuthorizeService {
     private static Set<String> parseScopes(String scopeStr) {
         if (scopeStr == null || scopeStr.isBlank()) return Set.of();
         // Split on commas and/or whitespace, then filter blanks
-        return java.util.Arrays.stream(scopeStr.split("[,\\s]+"))
+        return Arrays.stream(scopeStr.split("[,\\s]+"))
             .filter(s -> !s.isBlank())
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
     }
 }
