@@ -29,6 +29,11 @@
       "key": "code_verifier",
       "value": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
       "description": "RFC 7636 Appendix B test vector: 43-char random"
+    },
+    {
+      "key": "client_secret_basic",
+      "value": "dGVzdC1jbGllbnQ6dGVzdC1zZWNyZXQ=",
+      "description": "base64(test-client:test-secret) for Basic auth header"
     }
   ],
   "item": [
@@ -106,12 +111,13 @@
             "url": "{{baseUrl}}/oauth2/token",
             "header": [
               { "key": "Content-Type", "value": "application/x-www-form-urlencoded" },
-              { "key": "Authorization", "value": "Basic {{client_id}}:{{client_secret}}", "description": "RFC 6749 §2.3.1 Basic auth — base64(client_id:client_secret)" }
+              { "key": "Authorization", "value": "Basic {{client_secret_basic}}", "description": "RFC 6749 §2.3.1 Basic auth — base64(client_id:client_secret)" }
             ],
             "body": {
               "mode": "urlencoded",
               "urlencoded": [
                 { "key": "grant_type", "value": "client_credentials", "description": "RFC 6749 §4.2.1" },
+                { "key": "client_secret", "value": "{{client_secret}}", "description": "Required when not using Basic auth header" },
                 { "key": "scope", "value": "openid profile email", "description": "Space-separated scopes — limited to client's allowed_scopes" }
               ]
             },
