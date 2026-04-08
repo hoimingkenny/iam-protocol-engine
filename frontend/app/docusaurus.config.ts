@@ -66,6 +66,12 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
+          sidebarId: 'oauth2',
+          position: 'left',
+          label: 'OAuth 2.0',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'reference',
           position: 'left',
           label: 'Reference',
