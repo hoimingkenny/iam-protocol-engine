@@ -218,6 +218,7 @@ class TokenServiceTest {
         oldRefresh.setType(Token.TokenType.refresh_token);
         oldRefresh.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
         oldRefresh.setRevoked(false);
+        oldRefresh.setFamilyId("test-family-1");
 
         when(tokenRepo.findByJtiAndRevokedFalse("old-refresh-jti")).thenReturn(Optional.of(oldRefresh));
         when(tokenRepo.save(any(Token.class))).thenAnswer(i -> i.getArgument(0));
@@ -229,6 +230,8 @@ class TokenServiceTest {
         assertNotNull(resp.accessToken());
         assertNotNull(resp.refreshToken());
         assertNotEquals("old-refresh-jti", resp.refreshToken()); // rotated
+        // revokeAllByFamilyId is called for rotation with a family
+        verify(tokenRepo).revokeAllByFamilyId("test-family-1");
     }
 
     @Test
@@ -241,6 +244,7 @@ class TokenServiceTest {
         oldRefresh.setType(Token.TokenType.refresh_token);
         oldRefresh.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
         oldRefresh.setRevoked(false);
+        oldRefresh.setFamilyId("test-family-2");
 
         when(tokenRepo.findByJtiAndRevokedFalse("old-jti")).thenReturn(Optional.of(oldRefresh));
         when(tokenRepo.save(any(Token.class))).thenAnswer(i -> i.getArgument(0));
@@ -248,9 +252,8 @@ class TokenServiceTest {
         TokenRequest req = new TokenRequest("refresh_token", null, null, null, null, null, "old-jti", null);
         service.handleTokenRequest(req);
 
-        verify(tokenRepo).save(argThat(token ->
-            token.getRevoked() && token.getType() == Token.TokenType.refresh_token
-        ));
+        // revokeAllByFamilyId is called, not individual save
+        verify(tokenRepo).revokeAllByFamilyId("test-family-2");
     }
 
     // --- unsupported grant type ---

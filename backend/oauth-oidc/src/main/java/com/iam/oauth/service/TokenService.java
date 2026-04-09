@@ -101,10 +101,11 @@ public class TokenService {
         // 6. Determine scopes (use requested scope if provided, otherwise use auth code scope)
         String scope = resolveScope(request.scope(), authCode.getScope());
 
-        // 7. Issue tokens
+        // 7. Issue tokens with a new family_id
         String subject = authCode.getSubject() != null ? authCode.getSubject() : "";
-        Token accessToken = createAccessToken(authCode.getClientId(), subject, scope);
-        Token refreshToken = createRefreshToken(authCode.getClientId(), subject, scope);
+        String familyId = generateId(); // new family per auth code exchange
+        Token accessToken = createAccessToken(authCode.getClientId(), subject, scope, familyId);
+        Token refreshToken = createRefreshToken(authCode.getClientId(), subject, scope, familyId);
 
         tokenRepo.save(accessToken);
         tokenRepo.save(refreshToken);
@@ -166,16 +167,24 @@ public class TokenService {
             return TokenResponse.error("invalid_grant", "not a refresh token");
         }
 
-        // 3. Rotate: revoke old refresh token
-        oldRefresh.setRevoked(true);
-        tokenRepo.save(oldRefresh);
-
-        // 4. Determine scope
+        // 3. Determine scope
         String scope = resolveScope(request.scope(), oldRefresh.getScope());
 
-        // 5. Issue new access token + new refresh token
-        Token newAccess = createAccessToken(oldRefresh.getClientId(), oldRefresh.getSubject(), scope);
-        Token newRefresh = createRefreshToken(oldRefresh.getClientId(), oldRefresh.getSubject(), scope);
+        // 4. Rotate: revoke all tokens in the family (including old access token)
+        //    This prevents token family extension attacks (RFC 6749 §6 threat model).
+        String familyId = oldRefresh.getFamilyId();
+        if (familyId != null) {
+            tokenRepo.revokeAllByFamilyId(familyId);
+        } else {
+            // Pre-Phase-4 tokens have no family — revoke just the refresh token
+            oldRefresh.setRevoked(true);
+            tokenRepo.save(oldRefresh);
+        }
+
+        // 5. Issue new access token + new refresh token in the same family
+        String newFamilyId = familyId != null ? familyId : generateId();
+        Token newAccess = createAccessToken(oldRefresh.getClientId(), oldRefresh.getSubject(), scope, newFamilyId);
+        Token newRefresh = createRefreshToken(oldRefresh.getClientId(), oldRefresh.getSubject(), scope, newFamilyId);
 
         tokenRepo.save(newAccess);
         tokenRepo.save(newRefresh);
@@ -207,22 +216,23 @@ public class TokenService {
 
     // --- Token creation helpers ---
 
-    private Token createAccessToken(String clientId, String subject, String scope) {
+    private Token createAccessToken(String clientId, String subject, String scope, String familyId) {
         return createToken(clientId, subject, scope, TokenType.access_token,
-            Instant.now().plus(ACCESS_TOKEN_TTL_SECONDS, ChronoUnit.SECONDS));
+            Instant.now().plus(ACCESS_TOKEN_TTL_SECONDS, ChronoUnit.SECONDS), familyId);
     }
 
     private Token createAccessTokenForClient(String clientId, String scope) {
         return createToken(clientId, "", scope, TokenType.access_token,
-            Instant.now().plus(ACCESS_TOKEN_TTL_SECONDS, ChronoUnit.SECONDS));
+            Instant.now().plus(ACCESS_TOKEN_TTL_SECONDS, ChronoUnit.SECONDS), null);
     }
 
-    private Token createRefreshToken(String clientId, String subject, String scope) {
+    private Token createRefreshToken(String clientId, String subject, String scope, String familyId) {
         return createToken(clientId, subject, scope, TokenType.refresh_token,
-            Instant.now().plus(REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS));
+            Instant.now().plus(REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS), familyId);
     }
 
-    private Token createToken(String clientId, String subject, String scope, TokenType type, Instant expiresAt) {
+    private Token createToken(String clientId, String subject, String scope,
+                               TokenType type, Instant expiresAt, String familyId) {
         Token token = new Token();
         token.setJti(generateId());
         token.setClientId(clientId);
@@ -231,6 +241,7 @@ public class TokenService {
         token.setType(type);
         token.setExpiresAt(expiresAt);
         token.setRevoked(false);
+        token.setFamilyId(familyId);
         return token;
     }
 

@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface TokenRepository extends JpaRepository<Token, String> {
     Optional<Token> findByJtiAndRevokedFalse(String jti);
 
+    List<Token> findByFamilyIdAndRevokedFalse(String familyId);
+
     @Query("SELECT t FROM Token t WHERE t.subject = :subject AND t.revoked = false AND t.expiresAt > :now")
     List<Token> findActiveTokensBySubject(@Param("subject") String subject, @Param("now") Instant now);
 
@@ -22,6 +24,10 @@ public interface TokenRepository extends JpaRepository<Token, String> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Token t SET t.revoked = true WHERE t.subject = :subject")
     int revokeAllBySubject(@Param("subject") String subject);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Token t SET t.revoked = true WHERE t.familyId = :familyId")
+    int revokeAllByFamilyId(@Param("familyId") String familyId);
 
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Token t WHERE t.expiresAt < :now")

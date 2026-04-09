@@ -32,6 +32,14 @@ public class Token {
     @Column(name = "scope", columnDefinition = "TEXT")
     private String scope;
 
+    /**
+     * Token family identifier — groups an access token and refresh token issued together.
+     * When a refresh token is reused, ALL tokens in the same family are revoked.
+     * Null for tokens issued before Phase 4 migration.
+     */
+    @Column(name = "family_id", length = 128)
+    private String familyId;
+
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
