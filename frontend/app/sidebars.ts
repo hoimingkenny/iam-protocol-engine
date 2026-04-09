@@ -38,6 +38,12 @@ const sidebars: SidebarsConfig = {
     'Token-Lifecycle/Revocation',
   ],
 
+  adminUi: [
+    'Admin-UI/Overview',
+    'Admin-UI/Login-Flow',
+    'Admin-UI/Admin-API',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',

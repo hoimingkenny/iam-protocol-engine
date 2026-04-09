@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "IAM Protocol Engine",
-    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo.",
+    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4), Admin UI (Phase 5). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo, Admin UI (React+Vite+MUI), Login Flow, Admin API (/admin/clients, /admin/audit).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -267,6 +267,62 @@
               ]
             },
             "description": "Phase 4 — RFC 7009 Token Revocation. Always returns 200 OK (per spec, even if token invalid). Revoking a refresh token also revokes its paired access token (token family)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 5 — Admin UI",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/login",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "admin", "description": "Test user: admin, user1, alice" },
+                { "key": "password", "value": "admin123", "description": "Passwords: admin123, user1pass, alicepass" }
+              ]
+            },
+            "description": "Phase 5 — Authenticate user, returns login_token (Redis, 10min TTL). Test: admin/admin123, user1/user1pass, alice/alicepass."
+          }
+        },
+        {
+          "name": "Admin — List Clients",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/clients?page=0&size=20",
+            "header": [
+              { "key": "Authorization", "value": "Bearer ACCESS_TOKEN", "description": "Bearer token from Phase 2/3 auth code flow" }
+            ],
+            "description": "Phase 5 — List OAuth clients. Requires Bearer token (any valid access token)."
+          }
+        },
+        {
+          "name": "Admin — List Audit Events",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/audit?page=0&size=50",
+            "header": [
+              { "key": "Authorization", "value": "Bearer ACCESS_TOKEN", "description": "Bearer token from Phase 2/3 auth code flow" }
+            ],
+            "description": "Phase 5 — List audit events with pagination. Supports ?eventType= filter. Requires Bearer token."
+          }
+        },
+        {
+          "name": "Admin — List Users (placeholder)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users",
+            "header": [
+              { "key": "Authorization", "value": "Bearer ACCESS_TOKEN", "description": "Bearer token from Phase 2/3 auth code flow" }
+            ],
+            "description": "Phase 5 — Returns placeholder user list. Full SCIM /Users in Phase 6."
           }
         }
       ]

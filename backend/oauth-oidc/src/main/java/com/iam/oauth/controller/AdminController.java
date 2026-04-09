@@ -56,7 +56,7 @@ public class AdminController {
             return Optional.empty();
         }
         return tokenRepo.findByJtiAndRevokedFalse(tokenValue)
-            .filter(t -> t.getExpiresAt() != null && !t.getExpiresAt().isAfter(java.time.Instant.now()));
+            .filter(t -> t.getExpiresAt() != null && t.getExpiresAt().isAfter(java.time.Instant.now()));
     }
 
     private ResponseEntity<?> requireAuth(String authHeader) {

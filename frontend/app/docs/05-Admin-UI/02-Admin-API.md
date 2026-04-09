@@ -1,0 +1,131 @@
+---
+title: Admin API
+sidebar_position: 3
+description: Phase 5 admin endpoints — client list, audit log, and user placeholder.
+---
+
+# Admin API
+
+## Overview
+
+Three read-only admin endpoints powered by `AdminController`. All require a valid Bearer token (any active access token from the auth code flow).
+
+Base URL: `http://localhost:8080`
+
+All endpoints return paginated JSON responses.
+
+---
+
+## `GET /admin/clients`
+
+List all OAuth clients.
+
+```
+GET /admin/clients?page=0&size=20
+Authorization: Bearer ACCESS_TOKEN
+```
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "clientId": "test-client",
+      "clientName": "Test Client",
+      "isPublic": true,
+      "redirectUris": "http://localhost:9000/callback",
+      "allowedScopes": "openid profile email",
+      "grantTypes": "authorization_code client_credentials refresh_token",
+      "createdAt": "2026-04-08T08:08:30Z"
+    }
+  ],
+  "total": 1,
+  "page": 0,
+  "pages": 1
+}
+```
+
+---
+
+## `GET /admin/audit`
+
+List audit events with optional event type filter.
+
+```
+GET /admin/audit?page=0&size=50&eventType=token_issued
+Authorization: Bearer ACCESS_TOKEN
+```
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "eventType": "token_issued",
+      "actor": "user1",
+      "subject": "user1",
+      "clientId": "test-client",
+      "scope": "openid profile email",
+      "jti": "a1b2c3d4...",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-04-09T12:00:00Z",
+      "details": { "grantType": "authorization_code" }
+    }
+  ],
+  "total": 42,
+  "page": 0,
+  "pages": 1
+}
+```
+
+**Supported `eventType` values:**
+- `auth_code_issued`
+- `token_issued`
+- `token_refreshed`
+- `token_revoked`
+
+Omit `eventType` to return all events.
+
+---
+
+## `GET /admin/users`
+
+Placeholder user list. Returns hardcoded demo users — full SCIM `/Users` in Phase 6.
+
+```
+GET /admin/users
+Authorization: Bearer ACCESS_TOKEN
+```
+
+**Response:**
+```json
+{
+  "items": [
+    { "id": "1", "userName": "admin", "displayName": "Administrator", "active": true, "email": "admin@example.com" },
+    { "id": "2", "userName": "user1", "displayName": "User One", "active": true, "email": "user1@example.com" },
+    { "id": "3", "userName": "alice", "displayName": "Alice Smith", "active": true, "email": "alice@example.com" }
+  ],
+  "total": 3
+}
+```
+
+---
+
+## Authorization
+
+All three endpoints use the same Bearer token validation:
+
+1. Extract `Authorization: Bearer <token>` header
+2. Look up token value in `token` table by `jti`
+3. Reject if `revoked=true` or `expires_at` is in the past
+4. Return 401 if token is invalid
+
+No client authentication (client_id/client_secret) — any valid access token grants admin read access.
+
+## Future: Role-Based Access
+
+Phase 5 grants admin access to any valid token. Future phases should add:
+- A `roles` table or SCIM extension
+- Role check in `AdminController.requireAuth()` (e.g., `token.getRoles().contains("admin")`)
+- SCIM `/Users` lookup replacing the hardcoded placeholder

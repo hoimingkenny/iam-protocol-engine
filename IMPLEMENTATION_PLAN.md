@@ -608,6 +608,18 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
+### Learning Site: Phase 5 Chapters
+
+**Location:** `frontend/app/docs/05-Admin-UI/`
+
+| Chapter | Source |
+|---------|--------|
+| `05-Admin-UI/00-Overview` | Phase 5 overview, architecture, test accounts |
+| `05-Admin-UI/01-Login-Flow` | Login token, Redis session, PKCE redirect flow |
+| `05-Admin-UI/02-Admin-API` | /admin/clients, /admin/audit, /admin/users endpoints |
+
+---
+
 ### Phase 6: SCIM 2.0
 
 ---
