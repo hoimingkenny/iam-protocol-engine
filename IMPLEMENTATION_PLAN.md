@@ -11,7 +11,7 @@
 |----------|-----------|
 | Spring Authorization Server as scaffolding only | Core protocol logic written by hand — Spring handles wire-format, not behavior |
 | RS256 (self-built JWS/JWT) | Standard RS256; `kid` in JWKS from day 1 for rotation; built by hand to demonstrate RFC-level understanding — no JWT library |
-| Redis for all short-lived state | Auth codes, nonce, device flow polling state, revocation cache |
+| PostgreSQL for short-lived state | Auth codes, nonce, device flow polling state, revocation cache; Redis reserved for future caching needs |
 | PostgreSQL as source of truth | Long-lived entities (clients, tokens, users) |
 | SCIM built manually (no SDK) | Protocol depth; SDK would hide the spec |
 | Keycloak as primary SAML IdP for testing | Fast local iteration; Entra ID as demo realism |
@@ -213,23 +213,21 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 #### Task 5: PKCE Utility + Code Generation
 
-**Description:** Utility class for PKCE: `code_verifier` generation (43-128 char random), S256 `code_challenge` computation via SHA-256 + Base64URL. Auth code generation (RFC 7636).
+**Description:** Utility class for PKCE: `code_verifier` generation (43-128 char random), S256 `code_challenge` computation via SHA-256 + Base64URL (RFC 7636).
 
 **Acceptance criteria:**
-- [ ] `code_challenge = BASE64URL(SHA256(code_verifier))` matches RFC 7636 test vectors
-- [ ] `PkceUtil.generateCodeVerifier()` returns 43-128 char URL-safe random string
-- [ ] `PkceUtil.generateCodeChallenge(verifier)` returns S256 challenge
-- [ ] `AuthCodeGenerator.generate()` returns 32+ byte random code
-- [ ] Unit tests for both with known test vectors
+- [x] `code_challenge = BASE64URL(SHA256(code_verifier))` matches RFC 7636 test vectors
+- [x] `PkceUtils.generateCodeVerifier()` returns 43-128 char URL-safe random string
+- [x] `PkceUtils.deriveCodeChallenge(verifier)` returns S256 challenge
+- [x] `PkceUtils.verifyCodeChallenge(verifier, challenge, method)` validates correctly
+- [x] Unit tests for both with known test vectors
 
-**Verification:** `./mvnw test -pl backend/oauth-oidc -Dtest=PkceUtilTest` passes.
+**Verification:** `./mvnw test -pl backend/oauth-oidc -Dtest=PkceUtilsTest` passes.
 
 **Dependencies:** Task 4
 
 **Files:**
-- `backend/oauth-oidc/src/main/java/.../util/PkceUtil.java`
-- `backend/oauth-oidc/src/main/java/.../util/AuthCodeGenerator.java`
-- `backend/oauth-oidc/src/test/java/.../util/PkceUtilTest.java`
+- `backend/oauth-oidc/src/main/java/.../util/PkceUtils.java`
 
 **Estimated scope:** S
 
@@ -237,14 +235,14 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 #### Task 6: /authorize Endpoint (Auth Code + PKCE)
 
-**Description:** `GET /authorize` handler. Validates `client_id`, `redirect_uri` (exact match), `response_type=code`, `scope`, `state`. Stores auth code in Redis with TTL. Issues redirect with `code` and `state`.
+**Description:** `GET /authorize` handler. Validates `client_id`, `redirect_uri` (exact match), `response_type=code`, `scope`, `state`. Stores auth code in PostgreSQL with TTL. Issues redirect with `code` and `state`.
 
 **Acceptance criteria:**
-- [ ] Returns 400 with `invalid_request` if `redirect_uri` does not exactly match registered URI
-- [ ] Returns 400 with `invalid_request` if `code_challenge` missing or no `code_challenge_method=S256`
-- [ ] Returns 302 redirect to `redirect_uri?code=AUTHCODE&state=STATE` on success
-- [ ] Auth code stored in PostgreSQL with 5-minute TTL
-- [ ] Audit event logged
+- [x] Returns 400 with `invalid_request` if `redirect_uri` does not exactly match registered URI
+- [x] Returns 400 with `invalid_request` if `code_challenge` missing or no `code_challenge_method=S256`
+- [x] Returns 302 redirect to `redirect_uri?code=AUTHCODE&state=STATE` on success
+- [x] Auth code stored in PostgreSQL with 5-minute TTL
+- [x] Audit event logged
 
 **Verification:** `curl -v "http://localhost:8080/authorize?client_id=test&redirect_uri=https://app.example.com/cb&response_type=code&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"` → 302 with code.
 
@@ -252,8 +250,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 **Files:**
 - `backend/oauth-oidc/src/main/java/.../controller/AuthorizeController.java`
-- `backend/oauth-oidc/src/main/java/.../service/AuthorizationService.java`
-- `backend/oauth-oidc/src/main/java/.../repository/AuthCodeRepository.java`
+- `backend/oauth-oidc/src/main/java/.../service/AuthorizeService.java`
 
 **Estimated scope:** M
 
@@ -264,21 +261,20 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `POST /token` handler for `grant_type=authorization_code`. Validates `code`, `code_verifier` against stored PKCE challenge. Issues access token + refresh token. Marks auth code consumed.
 
 **Acceptance criteria:**
-- [ ] Returns 400 `invalid_grant` if code already consumed or expired
-- [ ] Returns 400 `invalid_grant` if `code_verifier` doesn't match stored challenge
-- [ ] Issues opaque access token (random string stored in DB); RS256 JWT access tokens are Phase 3
-- [ ] Issues refresh token (opaque random string) stored in PostgreSQL with 7-day TTL
-- [ ] Auth code consumed atomically (cannot be reused)
-- [ ] Audit event logged
+- [x] Returns 400 `invalid_grant` if code already consumed or expired
+- [x] Returns 400 `invalid_grant` if `code_verifier` doesn't match stored challenge
+- [x] Issues opaque access token (random string stored in DB); RS256 JWT access tokens are Phase 3
+- [x] Issues refresh token (opaque random string) stored in PostgreSQL with 7-day TTL
+- [x] Auth code consumed atomically (cannot be reused)
+- [x] Audit event logged
 
-**Verification:** Use Task 6 code → `curl -X POST http://localhost:8080/token -d "grant_type=authorization_code&code=AUTHCODE&code_verifier=codeverifier&redirect_uri=https://app.example.com/cb"` → JWT access token + refresh token.
+**Verification:** Use Task 6 code → `curl -X POST http://localhost:8080/oauth2/token -d "grant_type=authorization_code&code=AUTHCODE&code_verifier=codeverifier&redirect_uri=https://app.example.com/cb"` → opaque access token + refresh token.
 
 **Dependencies:** Tasks 5, 6
 
 **Files:**
 - `backend/oauth-oidc/src/main/java/.../controller/TokenController.java`
 - `backend/oauth-oidc/src/main/java/.../service/TokenService.java`
-- `backend/oauth-oidc/src/main/java/.../security/JwtTokenGenerator.java`
 
 **Estimated scope:** M
 
@@ -289,21 +285,18 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `POST /token` with `grant_type=client_credentials`. Authenticates client via `client_id` + `client_secret` (basic auth or body). Issues access token scoped to client's allowed scopes.
 
 **Acceptance criteria:**
-- [ ] Authenticates via `Authorization: Basic base64(id:secret)` header
-- [ ] Returns 400 `invalid_client` if credentials don't match
-- [ ] Issues access token with `client_id` as `sub` claim (no user)
-- [ ] Scope limited to client's `allowed_scopes`
-- [ ] Audit event logged
+- [x] Authenticates via `Authorization: Basic base64(id:secret)` header
+- [x] Returns 400 `invalid_client` if credentials don't match
+- [x] Issues access token with `client_id` as `sub` claim (no user)
+- [x] Scope limited to client's `allowed_scopes`
+- [x] Audit event logged
 
-**Verification:** `curl -X POST http://localhost:8080/token -H "Authorization: Basic $(echo -n client1:secret1 | base64)" -d "grant_type=client_credentials&scope=api:read"` → JWT access token.
+**Verification:** `curl -X POST http://localhost:8080/token -H "Authorization: Basic $(echo -n client1:secret1 | base64)" -d "grant_type=client_credentials&scope=api:read"` → opaque access token.
 
 **Dependencies:** Tasks 4, 7 (TokenService reused)
 
 **Files:**
-- `backend/oauth-oidc/src/main/java/.../controller/TokenController.java` (add client_credentials branch)
-- `backend/oauth-oidc/src/main/java/.../service/ClientCredentialsService.java`
-
-**Estimated scope:** S
+- `backend/oauth-oidc/src/main/java/.../controller/TokenController.java` (adds client_credentials branch to TokenService)
 
 ---
 
@@ -312,11 +305,11 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `demo-resource` module with a `/api/resource` endpoint that validates Bearer token on every request. Returns 401 if missing or invalid, 200 with resource data if valid.
 
 **Acceptance criteria:**
-- [ ] `GET /api/resource` requires `Authorization: Bearer <token>`
-- [ ] Returns 401 if no token or invalid token
-- [ ] Validates token against DB (not just signature): checks `active=true`, not expired, not revoked
-- [ ] Returns 200 with JSON payload on valid token
-- [ ] Audit event logged on each call
+- [x] `GET /api/resource` requires `Authorization: Bearer <token>`
+- [x] Returns 401 if no token or invalid token
+- [x] Validates token against DB (not just signature): checks `active=true`, not expired, not revoked
+- [x] Returns 200 with JSON payload on valid token
+- [x] Audit event logged on each call
 
 **Verification:** `curl http://localhost:8080/api/resource` → 401; `curl -H "Authorization: Bearer <valid_token>" http://localhost:8080/api/resource` → 200 + JSON.
 
@@ -324,8 +317,9 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 **Files:**
 - `backend/demo-resource/src/main/java/.../controller/ResourceController.java`
-- `backend/demo-resource/src/main/java/.../filter/BearerTokenFilter.java`
-- `backend/demo-resource/src/main/java/.../service/TokenValidationService.java`
+- `backend/demo-resource/src/main/java/.../security/BearerTokenAuthenticationFilter.java`
+- `backend/demo-resource/src/main/java/.../security/ResourceSecurityConfig.java`
+- `backend/demo-resource/src/main/java/.../security/TokenValidationService.java`
 
 **Estimated scope:** M
 
@@ -368,10 +362,10 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `/.well-known/openid-configuration` returns RFC 8414 metadata. `/.well-known/jwks.json` returns RSA public key(s) with `kid`.
 
 **Acceptance criteria:**
-- [ ] `/.well-known/openid-configuration` returns correct `issuer`, `authorization_endpoint`, `token_endpoint`, `jwks_uri`, `response_types_supported`, `subject_types_supported`, `id_token_signing_alg_values_supported`
-- [ ] `/.well-known/jwks.json` contains RSA public key with `kid`, `use=sig`, `alg=RS256`
-- [ ] New key pair generated at startup; `kid` stable across restarts (derived from key thumbprint)
-- [ ] Admin endpoint to trigger key rotation (generates new key, adds to JWKS, old key still valid for validation)
+- [x] `/.well-known/openid-configuration` returns correct `issuer`, `authorization_endpoint`, `token_endpoint`, `jwks_uri`, `response_types_supported`, `subject_types_supported`, `id_token_signing_alg_values_supported`
+- [x] `/.well-known/jwks.json` contains RSA public key with `kid`, `use=sig`, `alg=RS256`
+- [x] New key pair generated at startup; `kid` stable across restarts (derived from key thumbprint)
+- [x] Admin endpoint to trigger key rotation (generates new key, adds to JWKS, old key still valid for validation)
 
 **Verification:** `curl http://localhost:8080/.well-known/openid-configuration | jq .` and `curl http://localhost:8080/.well-known/jwks.json | jq .`
 
@@ -392,11 +386,11 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** When auth code is exchanged (Task 7), also issue an ID token (RS256 JWT) alongside the access token. ID token claims: `iss`, `sub`, `aud` (client_id), `exp`, `iat`, `nonce`.
 
 **Acceptance criteria:**
-- [ ] ID token is RS256-signed JWT
-- [ ] Contains all required claims: `iss`, `sub`, `aud`, `exp`, `iat`, `nonce`
-- [ ] `nonce` value matches what was passed to `/authorize`
-- [ ] ID token returned in `/token` response as `id_token` field
-- [ ] ID token can be validated against JWKS endpoint
+- [x] ID token is RS256-signed JWT
+- [x] Contains all required claims: `iss`, `sub`, `aud`, `exp`, `iat`, `nonce`
+- [x] `nonce` value matches what was passed to `/authorize`
+- [x] ID token returned in `/token` response as `id_token` field
+- [x] ID token can be validated against JWKS endpoint
 
 **Verification:** Exchange auth code → `id_token` in response. Decode JWT, verify signature against JWKS, verify `nonce` claim.
 
@@ -415,10 +409,10 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `GET /userinfo` returns OIDC claims for the authenticated user (Bearer token required).
 
 **Acceptance criteria:**
-- [ ] `GET /userinfo` with valid Bearer token returns JSON claims
-- [ ] Claims include `sub`, `scope`, `name`, `email` (if `email` scope requested)
-- [ ] Returns 401 if no or invalid token
-- [ ] Claims consistent with ID token issued for same auth
+- [x] `GET /userinfo` with valid Bearer token returns JSON claims
+- [x] Claims include `sub`, `scope`, `name`, `email` (if `email` scope requested)
+- [x] Returns 401 if no or invalid token
+- [x] Claims consistent with ID token issued for same auth
 
 **Verification:** `curl -H "Authorization: Bearer <token>" http://localhost:8080/userinfo` → JSON claims.
 
@@ -450,10 +444,10 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `POST /token` with `grant_type=refresh_token`. Issues new access + refresh token. Atomically invalidates the used refresh token. Old refresh token cannot be reused.
 
 **Acceptance criteria:**
-- [ ] Valid refresh token → new access token + new refresh token issued
-- [ ] Old refresh token atomically revoked in PostgreSQL
-- [ ] Reusing old refresh token → 400 `invalid_grant`; both tokens in that exchange family revoked
-- [ ] Refresh token bound to same `client_id` that originally issued it
+- [x] Valid refresh token → new access token + new refresh token issued
+- [x] Old refresh token atomically revoked in PostgreSQL
+- [x] Reusing old refresh token → 400 `invalid_grant`; both tokens in that exchange family revoked
+- [x] Refresh token bound to same `client_id` that originally issued it
 
 **Verification:** Two sequential refresh calls — first succeeds, second returns `invalid_grant`.
 
@@ -466,15 +460,15 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-#### Task 14: /introspect + /revoke Endpoints
+#### Task 14: /oauth2/introspect + /oauth2/revoke Endpoints
 
-**Description:** `POST /introspect` (RFC 7662) and `POST /revoke` (RFC 7009) endpoints.
+**Description:** `POST /oauth2/introspect` (RFC 7662) and `POST /oauth2/revoke` (RFC 7009) endpoints.
 
 **Acceptance criteria:**
-- [ ] `/introspect` with valid token → `{"active": true, "sub": ..., "scope": ..., "exp": ...}`
-- [ ] `/introspect` with revoked/expired token → `{"active": false}`
-- [ ] `/revoke` immediately marks token revoked in DB
-- [ ] Introspection works for both access and refresh tokens (token_type hint)
+- [x] `/oauth2/introspect` with valid token → `{"active": true, "sub": ..., "scope": ..., "exp": ...}`
+- [x] `/oauth2/introspect` with revoked/expired token → `{"active": false}`
+- [x] `/oauth2/revoke` immediately marks token revoked in DB (returns 200 always per RFC 7009 §2.2)
+- [x] Introspection works for both access and refresh tokens (token_type hint)
 
 **Verification:** Token introspection against: (a) valid token, (b) revoked token, (c) expired token.
 
