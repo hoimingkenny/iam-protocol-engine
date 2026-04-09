@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "IAM Protocol Engine",
-    "description": "OAuth 2.0 (Phase 2), OIDC/SAML/SCIM/WebAuthn (future phases). Phase 2: Auth Code+PKCE, Client Credentials, Refresh Rotation, demo-resource.",
+    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -170,14 +170,14 @@
       ]
     },
     {
-      "name": "Phase 3 — OIDC (planned)",
+      "name": "Phase 3 — OIDC",
       "item": [
         {
           "name": "OIDC Discovery",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/.well-known/openid-configuration",
-            "description": "Phase 3 — OIDC Provider Metadata. Returns issuer, endpoints, supported algorithms."
+            "description": "Phase 3 — OIDC Provider Metadata (RFC 8414). Returns issuer, endpoints, supported algorithms."
           }
         },
         {
@@ -185,7 +185,15 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/.well-known/jwks.json",
-            "description": "Phase 3 — JSON Web Key Set. RSA public keys with kid, use=sig, alg=RS256."
+            "description": "Phase 3 — JSON Web Key Set (RFC 7517). RSA public keys with kid, use=sig, alg=RS256."
+          }
+        },
+        {
+          "name": "JWKS Key Rotation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/.well-known/jwks.json",
+            "description": "Phase 3 — Generates a new RSA key pair, adds it to the keystore, returns the new kid. Old keys remain valid for token validation."
           }
         },
         {
@@ -206,7 +214,7 @@
                 { "key": "client_id", "value": "{{client_id}}" }
               ]
             },
-            "description": "Phase 3 — auth code exchange also returns id_token (RS256 JWT) alongside access_token."
+            "description": "Phase 3 — Auth code exchange also returns id_token (RS256 JWT) alongside access_token and refresh_token."
           }
         },
         {
@@ -217,43 +225,48 @@
             "header": [
               { "key": "Authorization", "value": "Bearer ACCESS_TOKEN" }
             ],
-            "description": "Phase 3 — OIDC claims endpoint. Returns claims consistent with ID token."
+            "description": "Phase 3 — OIDC claims endpoint (OIDC Core 1.0 §5.3). Returns sub, scope, and scope-driven claims."
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "Phase 4 — Token Lifecycle",
+      "item": [
         {
           "name": "Token Introspection",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/introspect",
+            "url": "{{baseUrl}}/oauth2/introspect",
             "header": [
               { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
             ],
             "body": {
               "mode": "urlencoded",
               "urlencoded": [
-                { "key": "token", "value": "ACCESS_TOKEN" },
-                { "key": "token_type_hint", "value": "access_token" }
+                { "key": "token", "value": "ACCESS_TOKEN", "description": "Token to introspect (jti lookup)" },
+                { "key": "token_type_hint", "value": "access_token", "description": "Optional hint — access_token or refresh_token" }
               ]
             },
-            "description": "Phase 3 — RFC 7662 token introspection. Returns {active: true/false, sub, scope, exp...}"
+            "description": "Phase 4 — RFC 7662 Token Introspection. Returns {active: true, sub, client_id, scope, exp, iat} or {active: false}."
           }
         },
         {
           "name": "Token Revocation",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/revoke",
+            "url": "{{baseUrl}}/oauth2/revoke",
             "header": [
               { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
             ],
             "body": {
               "mode": "urlencoded",
               "urlencoded": [
-                { "key": "token", "value": "TOKEN_TO_REVOKE" },
-                { "key": "token_type_hint", "value": "access_token" }
+                { "key": "token", "value": "TOKEN_TO_REVOKE", "description": "Token to revoke" },
+                { "key": "token_type_hint", "value": "access_token", "description": "Optional hint — access_token or refresh_token" }
               ]
             },
-            "description": "Phase 3 — RFC 7009 token revocation. Token immediately becomes inactive."
+            "description": "Phase 4 — RFC 7009 Token Revocation. Always returns 200 OK (per spec, even if token invalid). Revoking a refresh token also revokes its paired access token (token family)."
           }
         }
       ]

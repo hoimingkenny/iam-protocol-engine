@@ -1,7 +1,7 @@
 # IAM Protocol Engine — Implementation Plan
 
 **Spec:** `SPEC.md`
-**Updated:** 2026-04-06
+**Updated:** 2026-04-09
 
 ---
 
@@ -10,7 +10,7 @@
 | Decision | Rationale |
 |----------|-----------|
 | Spring Authorization Server as scaffolding only | Core protocol logic written by hand — Spring handles wire-format, not behavior |
-| RS256 + Nimbus JOSE+JWT | Standard, mature; `kid` in JWKS from day 1 for rotation |
+| RS256 (self-built JWS/JWT) | Standard RS256; `kid` in JWKS from day 1 for rotation; built by hand to demonstrate RFC-level understanding — no JWT library |
 | Redis for all short-lived state | Auth codes, nonce, device flow polling state, revocation cache |
 | PostgreSQL as source of truth | Long-lived entities (clients, tokens, users) |
 | SCIM built manually (no SDK) | Protocol depth; SDK would hide the spec |
@@ -266,8 +266,8 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Acceptance criteria:**
 - [ ] Returns 400 `invalid_grant` if code already consumed or expired
 - [ ] Returns 400 `invalid_grant` if `code_verifier` doesn't match stored challenge
-- [ ] Issues RS256-signed access token (JWT) containing `jti`, `sub`, `scope`, `client_id`, `exp`
-- [ ] Issues refresh token (opaque random string) stored in Redis with 7-day TTL
+- [ ] Issues opaque access token (random string stored in DB); RS256 JWT access tokens are Phase 3
+- [ ] Issues refresh token (opaque random string) stored in PostgreSQL with 7-day TTL
 - [ ] Auth code consumed atomically (cannot be reused)
 - [ ] Audit event logged
 
