@@ -23,6 +23,14 @@ const sidebars: SidebarsConfig = {
     'OAuth2/Demo-Resource',
   ],
 
+  oidc: [
+    'OIDC/Overview',
+    'OIDC/Discovery',
+    'OIDC/JWKS',
+    'OIDC/ID-Token',
+    'OIDC/UserInfo',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',

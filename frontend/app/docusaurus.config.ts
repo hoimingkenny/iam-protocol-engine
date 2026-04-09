@@ -72,6 +72,12 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
+          sidebarId: 'oidc',
+          position: 'left',
+          label: 'OIDC',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'reference',
           position: 'left',
           label: 'Reference',
