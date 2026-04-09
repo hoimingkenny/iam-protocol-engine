@@ -1,0 +1,90 @@
+---
+title: OIDC Discovery
+sidebar_position: 2
+description: RFC 8414 server metadata at /.well-known/openid-configuration.
+---
+
+# OIDC Discovery
+
+## What It Is
+
+OIDC Discovery (RFC 8414) is a standardized JSON document that tells clients everything they need to interact with the authorization server — without hardcoding URLs, algorithm choices, or feature flags.
+
+Instead of reading documentation or asking an administrator, a client library can `GET /.well-known/openid-configuration` and immediately know:
+- Where to send authorization requests
+- Where to exchange codes for tokens
+- Which signing algorithms are supported
+- What grant types are available
+
+## The Endpoint
+
+```
+GET /.well-known/openid-configuration
+```
+
+Returns `application/json` with a flat key-value structure per RFC 8414 §3.
+
+## Example Response
+
+```json
+{
+  "issuer": "http://localhost:8080",
+  "authorization_endpoint": "http://localhost:8080/oauth2/authorize",
+  "token_endpoint": "http://localhost:8080/oauth2/token",
+  "jwks_uri": "http://localhost:8080/.well-known/jwks.json",
+  "response_types_supported": ["code"],
+  "subject_types_supported": ["public"],
+  "id_token_signing_alg_values_supported": ["RS256"],
+  "scopes_supported": ["openid", "profile", "email"],
+  "token_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "claims_supported": [
+    "iss", "sub", "aud", "exp", "iat", "nonce",
+    "name", "email", "scope"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "client_credentials",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code"
+  ],
+  "code_challenge_methods_supported": ["S256"]
+}
+```
+
+## Key Fields Explained
+
+**`issuer`** — the authority identifier. Every ID token's `iss` claim must match this value. Clients use it as the base URL for OIDC-specific operations.
+
+**`jwks_uri`** — where clients go to fetch the public keys used to verify ID token signatures. This is the link between the discovery document and cryptographic verification.
+
+**`id_token_signing_alg_values_supported`** — which algorithms the server might use to sign ID tokens. Our server only supports `RS256`. Clients must reject tokens signed with any algorithm not in this list (a critical OIDC security requirement).
+
+**`claims_supported`** — the claims that might appear in an ID token or UserInfo response. This tells client libraries which fields to expect, so they can handle unknown fields gracefully.
+
+## Why Not Include Everything in ID Tokens?
+
+OIDC separates identity information into two places:
+- **ID token** — minimal identity claims (`iss`, `sub`, `aud`, `exp`, `iat`, `nonce`) embedded directly in a signed JWT for immediate client verification
+- **UserInfo endpoint** — additional claims (`name`, `email`, `profile`) available on request, requiring an additional API call
+
+This is a deliberate tradeoff: keeping the ID token small and fast to verify, while allowing richer data to be fetched when needed. The ID token proves identity cryptographically; the UserInfo response provides human-readable attributes.
+
+## Configuration
+
+The `issuer` value comes from `iam.issuer` in `application.properties`:
+
+```properties
+iam.issuer=http://localhost:8080
+```
+
+Set this to your public-facing domain (e.g. `https://auth.example.com`) for production. Clients behind a reverse proxy will use this to validate the `iss` claim — if it doesn't match how they reached the server, token validation fails.
+
+## Verification
+
+```bash
+curl http://localhost:8080/.well-known/openid-configuration | jq .
+```
