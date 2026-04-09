@@ -44,6 +44,12 @@ const sidebars: SidebarsConfig = {
     'Admin-UI/Admin-API',
   ],
 
+  scim: [
+    'SCIM/Overview',
+    'SCIM/Users',
+    'SCIM/Groups',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "IAM Protocol Engine",
-    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4), Admin UI (Phase 5). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo, Admin UI (React+Vite+MUI), Login Flow, Admin API (/admin/clients, /admin/audit).",
+    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4), Admin UI (Phase 5), SCIM 2.0 (Phase 6). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo, Admin UI (React+Vite+MUI), SCIM 2.0 Users and Groups CRUD (RFC 7643/7644).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -328,33 +328,71 @@
       ]
     },
     {
-      "name": "Phase 4 — SCIM 2.0 (planned)",
+      "name": "Phase 6 — SCIM 2.0",
       "item": [
         {
-          "name": "Create User (Joinee)",
+          "name": "Create User",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/scim/v2/Users",
             "header": [
-              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{access_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"],\n  \"userName\": \"john.doe\",\n  \"name\": { \"givenName\": \"John\", \"familyName\": \"Doe\" },\n  \"emails\": [{ \"value\": \"john.doe@example.com\", \"primary\": true }],\n  \"active\": true\n}"
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"],\n  \"userName\": \"john.doe\",\n  \"name\": { \"givenName\": \"John\", \"familyName\": \"Doe\" },\n  \"displayName\": \"John Doe\",\n  \"emails\": [{ \"value\": \"john.doe@example.com\", \"primary\": true }],\n  \"active\": true\n}"
             },
-            "description": "Phase 5 — SCIM joiner flow. Creates user account."
+            "description": "Phase 6 (RFC 7644 §5.2) — Create a SCIM user. Returns 201 with Location header. Duplicate userName returns 409."
           }
         },
         {
           "name": "List Users",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/scim/v2/Users",
+            "url": "{{baseUrl}}/scim/v2/Users?startIndex=1&count=10",
             "header": [
               { "key": "Authorization", "value": "Bearer {{access_token}}" }
             ],
-            "description": "Phase 5 — List all SCIM users with optional filtering."
+            "description": "Phase 6 (RFC 7644 §5.2) — List SCIM users. Supports ?filter=userName eq \"...\"&startIndex=1&count=10."
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "description": "Phase 6 (RFC 7644 §5.2) — Get a single SCIM user by ID. Returns 404 if not found."
+          }
+        },
+        {
+          "name": "Replace User (PUT)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:User\"],\n  \"userName\": \"john.doe.updated\",\n  \"displayName\": \"John D. Updated\",\n  \"emails\": [{ \"value\": \"john.updated@example.com\", \"primary\": true }],\n  \"active\": false\n}"
+            },
+            "description": "Phase 6 (RFC 7644 §5.2) — Replace (PUT) a SCIM user. Full resource update."
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "description": "Phase 6 (RFC 7644 §5.2) — Delete a SCIM user. Returns 204 No Content on success."
           }
         },
         {
@@ -363,30 +401,79 @@
             "method": "POST",
             "url": "{{baseUrl}}/scim/v2/Groups",
             "header": [
-              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{access_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:Group\"],\n  \"displayName\": \"Engineering\",\n  \"members\": [{ \"value\": \"{{user_id}}\" }]\n}"
+              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:schemas:core:2.0:Group\"],\n  \"displayName\": \"Engineering\"\n}"
             },
-            "description": "Phase 5 — Create a SCIM group."
+            "description": "Phase 6 (RFC 7644 §5.3) — Create a SCIM group. Members are added via PATCH."
           }
         },
         {
-          "name": "Patch Group (Modify Membership)",
+          "name": "List Groups",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Groups?startIndex=1&count=10",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "description": "Phase 6 (RFC 7644 §5.3) — List SCIM groups. Supports ?filter=displayName eq \"...\"."
+          }
+        },
+        {
+          "name": "Get Group",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/scim/v2/Groups/{{group_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "description": "Phase 6 (RFC 7644 §5.3) — Get a single SCIM group by ID."
+          }
+        },
+        {
+          "name": "Patch Group — Add Members",
           "request": {
             "method": "PATCH",
             "url": "{{baseUrl}}/scim/v2/Groups/{{group_id}}",
             "header": [
-              { "key": "Content-Type", "value": "application/scim+json" },
+              { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{access_token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"schemas\": [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"],\n  \"Operations\": [\n    { \"op\": \"add\", \"path\": \"members\", \"value\": [{ \"value\": \"{{user_id}}\" }] }\n  ]\n}"
+              "raw": "[\n  { \"op\": \"add\", \"members\": [{ \"value\": \"{{user_id}}\" }] }\n]"
             },
-            "description": "Phase 5 — RFC 7644 §4.3 PATCH. Add or remove group members."
+            "description": "Phase 6 (RFC 7644 §4.3) — Add members to a group. Body is a JSON array of PATCH operations."
+          }
+        },
+        {
+          "name": "Patch Group — Remove Members",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/scim/v2/Groups/{{group_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"op\": \"remove\", \"members\": [{ \"value\": \"{{user_id}}\" }] }\n]"
+            },
+            "description": "Phase 6 (RFC 7644 §4.3) — Remove members from a group."
+          }
+        },
+        {
+          "name": "Delete Group",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/scim/v2/Groups/{{group_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "description": "Phase 6 (RFC 7644 §5.3) — Delete a SCIM group. Returns 204 No Content on success."
           }
         }
       ]

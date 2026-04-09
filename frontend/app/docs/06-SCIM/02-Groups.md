@@ -1,0 +1,153 @@
+---
+title: SCIM /Groups + Membership
+sidebar_position: 3
+description: RFC 7644 §5.3 — Group resource type: create, list, get, PATCH members, delete.
+---
+
+# SCIM /Groups — RFC 7644 §5.3
+
+## Group Resource Type
+
+The SCIM Group resource (RFC 7643 §5.2) represents a group (or team) of users. Membership is managed via PATCH operations.
+
+```java
+// ScimGroupDto fields
+record ScimGroupDto(
+    String id,
+    String displayName,     // REQUIRED — group name
+    List<MemberDto> members,  // [{ value: "uuid", $ref: null, type: "User" }]
+    String externalId,
+    Map<String, Object> attributes,  // JSONB extension fields
+    MetaDto meta,
+    String location
+) {}
+```
+
+## Endpoints
+
+### POST /scim/v2/Groups — Create Group
+
+```
+POST /scim/v2/Groups
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{ "displayName": "Engineering" }
+→ 201 Created
+→ Location: http://localhost:8080/scim/v2/Groups/{uuid}
+```
+
+Initial members are added via PATCH after creation (RFC 7644 §4.3).
+
+### GET /scim/v2/Groups — List Groups
+
+```
+GET /scim/v2/Groups?filter=displayName eq "Eng"&startIndex=1&count=10
+Authorization: Bearer <token>
+
+→ 200 OK
+→ Body: ScimListResponse<ScimGroupDto>
+```
+
+Supports filtering by `displayName` (substring match, case-insensitive).
+
+### GET /scim/v2/Groups/{id} — Get Group
+
+```
+GET /scim/v2/Groups/{uuid}
+Authorization: Bearer <token>
+
+→ 200 OK, Body: ScimGroupDto with members list
+→ 404 Not Found if not found
+```
+
+### PATCH /scim/v2/Groups/{id} — Modify Members (RFC 7644 §4.3)
+
+The PATCH body is a JSON array of operations. Each operation has:
+- `op`: `"add"` or `"remove"`
+- `members`: array of `{ "value": "user-uuid" }`
+
+```bash
+# Add members
+PATCH /scim/v2/Groups/{id}
+Content-Type: application/json
+Authorization: Bearer <token>
+
+[
+  { "op": "add", "members": [{ "value": "uuid-of-alice" }] },
+  { "op": "add", "members": [{ "value": "uuid-of-bob" }] }
+]
+→ 200 OK, Body: ScimGroupDto with updated members
+
+# Remove members
+PATCH /scim/v2/Groups/{id}
+Content-Type: application/json
+Authorization: Bearer <token>
+
+[
+  { "op": "remove", "members": [{ "value": "uuid-of-bob" }] }
+]
+→ 200 OK
+```
+
+The server validates that all member IDs refer to existing users before persisting. Invalid member IDs → 400 Bad Request.
+
+### DELETE /scim/v2/Groups/{id} — Delete Group
+
+```
+DELETE /scim/v2/Groups/{uuid}
+Authorization: Bearer <token>
+
+→ 204 No Content on success
+→ 404 Not Found if not found
+```
+
+## PATCH Operation Flow
+
+```java
+@Transactional
+public Object patchGroup(UUID id, List<Map<String, Object>> operations) {
+    ScimGroup group = groupRepo.findById(id)
+        .orElse(null);  // → 404 if absent
+
+    // 1. Parse existing members into a Set
+    Set<String> memberIds = new HashSet<>();
+    for (String m : group.getMembers().split(","))
+        if (!m.isBlank()) memberIds.add(m.trim());
+
+    // 2. Apply PATCH operations
+    for (Map<String, Object> op : operations) {
+        String opType = (String) op.get("op");
+        List<Map<String, Object>> members =
+            (List<Map<String, Object>>) op.get("members");
+
+        if ("add".equalsIgnoreCase(opType)) {
+            for (Map<String, Object> member : members)
+                memberIds.add((String) member.get("value"));
+        } else if ("remove".equalsIgnoreCase(opType)) {
+            for (Map<String, Object> member : members)
+                memberIds.remove(member.get("value"));
+        }
+    }
+
+    // 3. Validate all member IDs exist in DB
+    for (String memberId : memberIds) {
+        if (!userRepo.existsById(UUID.fromString(memberId)))
+            return ScimError.badRequest("User not found: " + memberId);
+    }
+
+    // 4. Persist as comma-separated string
+    group.setMembers(String.join(",", memberIds));
+    return toDto(groupRepo.save(group), location);
+}
+```
+
+## Key Design Decisions
+
+**Members stored as comma-separated UUIDs.** The `members` column on `ScimGroup` is a plain string, not a JSON array. This keeps the data model consistent with the project's "no JSON columns for simple arrays" rule.
+
+**Member validation on PATCH.** Before persisting, every member UUID is checked against `ScimUserRepository.existsById()`. This catches stale IDs and invalid UUIDs atomically.
+
+**PATCH is idempotent for add.** Adding the same member twice is a no-op (Set deduplication).
+
+**Location header on create.** All resources return `Location: http://localhost:8080/scim/v2/.../{id}` per RFC 7644 §5.2.
