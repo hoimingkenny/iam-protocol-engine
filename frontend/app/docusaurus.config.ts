@@ -78,6 +78,12 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
+          sidebarId: 'tokenLifecycle',
+          position: 'left',
+          label: 'Token Lifecycle',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'reference',
           position: 'left',
           label: 'Reference',

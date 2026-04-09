@@ -31,6 +31,13 @@ const sidebars: SidebarsConfig = {
     'OIDC/UserInfo',
   ],
 
+  tokenLifecycle: [
+    'Token-Lifecycle/Overview',
+    'Token-Lifecycle/Refresh-Rotation',
+    'Token-Lifecycle/Introspection',
+    'Token-Lifecycle/Revocation',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',
