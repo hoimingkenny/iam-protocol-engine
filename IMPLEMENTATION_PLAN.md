@@ -174,13 +174,13 @@ Frontend Admin UI (can start after oauth-oidc)
 
 ---
 
-### Checkpoint: Phase 1
+### Checkpoint: Phase 1 ✅
 
-- [ ] All 4 tasks pass verification
-- [ ] `./mvnw compile` clean across all modules
-- [ ] App starts and connects to PostgreSQL + Redis
-- [ ] Flyway migration applied
-- [ ] Human reviews before proceeding to Phase 2
+- [x] All 4 tasks pass verification
+- [x] `./mvnw compile` clean across all modules
+- [x] App starts and connects to PostgreSQL + Redis
+- [x] Flyway migration applied
+- [x] Human reviews before proceeding to Phase 2
 
 ---
 
@@ -243,7 +243,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 - [ ] Returns 400 with `invalid_request` if `redirect_uri` does not exactly match registered URI
 - [ ] Returns 400 with `invalid_request` if `code_challenge` missing or no `code_challenge_method=S256`
 - [ ] Returns 302 redirect to `redirect_uri?code=AUTHCODE&state=STATE` on success
-- [ ] Auth code stored in Redis with 5-minute TTL, keyed by `auth_code:{code}`
+- [ ] Auth code stored in PostgreSQL with 5-minute TTL
 - [ ] Audit event logged
 
 **Verification:** `curl -v "http://localhost:8080/authorize?client_id=test&redirect_uri=https://app.example.com/cb&response_type=code&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"` → 302 with code.
@@ -331,13 +331,29 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 2
+### Checkpoint: Phase 2 ✅
 
-- [ ] Auth Code + PKCE flow end-to-end works (Tasks 6 + 7)
-- [ ] Client Credentials flow works (Task 8)
-- [ ] demo-resource validates tokens correctly (Task 9)
-- [ ] `./mvnw test -pl backend/oauth-oidc,demo-resource` passes
-- [ ] Human reviews before Phase 3
+- [x] Auth Code + PKCE flow end-to-end works (Tasks 6 + 7)
+- [x] Client Credentials flow works (Task 8)
+- [x] demo-resource validates tokens correctly (Task 9)
+- [x] `./mvnw test -pl backend/oauth-oidc,demo-resource` passes
+- [x] Human reviews before Phase 3
+
+---
+
+### Learning Site: Phase 2 Chapters
+
+**Location:** `frontend/app/docs/02-OAuth2/`
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+| Chapter | Source |
+|---------|--------|
+| `02-OAuth2/00-Overview` | Phase 2 overview, what OAuth 2.0 adds over basic auth |
+| `02-OAuth2/01-PKCE` | RFC 7636, code_challenge, code_verifier, S256 |
+| `02-OAuth2/02-Authorize-Endpoint` | RFC 6749 §4.1, redirect_uri exact match, state, errors |
+| `02-OAuth2/03-Token-Endpoint` | RFC 6749 §3.2, auth code exchange, token response |
+| `02-OAuth2/04-Client-Credentials` | RFC 6749 §4.2, client authentication, m2m tokens |
+| `02-OAuth2/05-Demo-Resource` | Bearer token validation, demo API protected endpoint |
 
 ---
 
@@ -415,13 +431,13 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 3
+### Checkpoint: Phase 3 ✅
 
-- [ ] Discovery + JWKS endpoints work (Task 10)
-- [ ] ID token issued and validatable (Task 11)
-- [ ] `/userinfo` returns correct claims (Task 12)
-- [ ] `./mvnw test -pl backend/oauth-oidc` passes
-- [ ] Human reviews before Phase 4
+- [x] Discovery + JWKS endpoints work (Task 10)
+- [x] ID token issued and validatable (Task 11)
+- [x] `/userinfo` returns correct claims (Task 12)
+- [x] `./mvnw test -pl backend/oauth-oidc` passes
+- [x] Human reviews before Phase 4
 
 ---
 
@@ -435,7 +451,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 **Acceptance criteria:**
 - [ ] Valid refresh token → new access token + new refresh token issued
-- [ ] Old refresh token deleted from Redis atomically
+- [ ] Old refresh token atomically revoked in PostgreSQL
 - [ ] Reusing old refresh token → 400 `invalid_grant`; both tokens in that exchange family revoked
 - [ ] Refresh token bound to same `client_id` that originally issued it
 
@@ -444,7 +460,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Dependencies:** Task 7
 
 **Files:**
-- `backend/oauth-oidc/src/main/java/.../service/RefreshTokenService.java`
+- `backend/oauth-oidc/src/main/java/.../service/TokenService.java` (handleRefreshTokenGrant method)
 
 **Estimated scope:** M
 
@@ -472,12 +488,40 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 4
+### Checkpoint: Phase 4 🚧 In Progress
 
-- [ ] Refresh rotation works (Task 13)
-- [ ] Introspect + revoke work (Task 14)
+- [ ] Refresh rotation works (Task 13) — learning doc written; code not yet implemented
+- [ ] Introspect + revoke work (Task 14) — learning doc written; code not yet implemented
 - [ ] SC-03, SC-04 from SPEC.md satisfied
 - [ ] Human reviews before Phase 5
+
+---
+
+### Learning Site: Phase 3 Chapters
+
+**Location:** `frontend/app/docs/03-OIDC/`
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+| Chapter | Source |
+|---------|--------|
+| `03-OIDC/00-Overview` | Phase 3 overview, key design decisions, test coverage |
+| `03-OIDC/01-Discovery` | RFC 8414, issuer, jwks_uri, claims_supported |
+| `03-OIDC/02-JWKS` | kid derivation, key rotation, PKCS12 keystore |
+| `03-OIDC/03-ID-Token` | JWT structure, RS256 vs HS256, nonce, verification checklist |
+| `03-OIDC/04-UserInfo` | OIDC Core §5.3, scope-driven claims, full flow diagram |
+
+---
+
+### Learning Site: Phase 4 Chapters
+
+**Location:** `frontend/app/docs/04-Token-Lifecycle/`
+
+| Chapter | Source |
+|---------|--------|
+| `04-Token-Lifecycle/00-Overview` | Phase 4 overview, module changes, flows summary |
+| `04-Token-Lifecycle/01-Refresh-Rotation` | RFC 6749 §6, atomic rotation, reuse detection, blast radius |
+| `04-Token-Lifecycle/02-Introspection` | RFC 7662, active/inactive responses, active token fields |
+| `04-Token-Lifecycle/03-Revocation` | RFC 7009, immediate invalidation, 200 always returned |
 
 ---
 
