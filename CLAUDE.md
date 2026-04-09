@@ -69,7 +69,7 @@ These are enforced across the codebase — do not weaken them:
 - **`kid` in JWKS** from day one — key rotation is designed in
 - **Refresh token rotation** — old token invalidated atomically on reuse
 - **Structured audit logs** — always include `client_id`, `sub`, `scope`, `jti`, `event_type`
-- **Redis TTL** for all short-lived state (auth codes: 5min, device codes: 10min, refresh tokens: 7 days)
+- **PostgreSQL for short-lived state** — auth codes, device codes, refresh tokens; Redis reserved for future caching needs
 
 ### Patterns
 
@@ -80,7 +80,38 @@ These are enforced across the codebase — do not weaken them:
 
 ## Current Implementation State
 
-Phase 1 (Bootstrap) is complete — skeleton, infra, entities, API gateway entry point. Current branch is `phase1-task4-api-gateway`. Phase 2 (OAuth 2.0 Core) is next per IMPLEMENTATION_PLAN.md.
+Current branch: `phase-5`. Phase 1–4 complete (Bootstrap, OAuth 2.0 Core, OIDC Layer, Token Lifecycle). Phase 5 (Admin UI) in progress. See `IMPLEMENTATION_PLAN.md` for full task status.
+
+## Git Workflow
+
+### Branches
+Feature branches named `phase-N` accumulate all commits for that phase. `phase-2` is the main integration branch. Phase branches build on each other: `phase-3` → `phase-2` → `phase-4` → `phase-3` etc.
+
+### Commits
+Format:
+```
+<type>: <short description>
+
+[Optional body explaining why]
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+```
+
+Types: `Phase N Task X: <description>`, `docs:`, `fix:`, `Sync IMPLEMENTATION_PLAN.md:`
+
+### Typical Phase Sequence
+1. `git checkout -b phase-N` from previous phase branch
+2. Implement tasks as commits
+3. Add documentation: `doc/` files (testing guide, code change summaries), learning site docs in `frontend/app/docs/`
+4. Update `IMPLEMENTATION_PLAN.md` checkpoint to mark phase complete
+5. Push and PR to previous phase branch when ready
+
+### Doc Files
+- `doc/06. Phase 2 Code Change Summary.md` — per-phase code change summaries
+- `doc/07. Phase 3 Code Change Summary.md`
+- `doc/08. Phase 4 Code Change Summary.md`
+- `doc/05. Testing Guide.md` — Postman-based API testing across all phases
+- Learning site: `frontend/app/docs/` (Docusaurus, sidebar driven)
 
 ## Boundaries
 
