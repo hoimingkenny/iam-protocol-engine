@@ -14,7 +14,7 @@ Phase 4 completes the token lifecycle: refresh token rotation, token introspecti
 
 | Module | What Changed |
 |--------|--------------|
-| `oauth-oidc` | `RefreshTokenService` (Task 13), `IntrospectionController` (Task 14), `RevocationController` (Task 14) |
+| `oauth-oidc` | `TokenService` (refresh rotation in `handleRefreshTokenGrant`), `IntrospectionController` (Task 14), `RevocationController` (Task 14) |
 
 ## What Phase 4 Adds
 
@@ -32,10 +32,10 @@ POST /oauth2/token                    → new access_token + new refresh_token
   (old refresh_token is atomically revoked)
 
 # Token Introspection (RFC 7662)
-POST /introspect                     → {active: true/false, sub, scope, exp...}
+POST /oauth2/introspect              → {active: true/false, sub, scope, exp...}
 
 # Token Revocation (RFC 7009)
-POST /revoke                         → immediate token invalidation
+POST /oauth2/revoke                  → immediate token invalidation
 ```
 
 ## Key Design Decisions
@@ -52,7 +52,5 @@ POST /revoke                         → immediate token invalidation
 
 ```
 oauth-oidc:
-  RefreshTokenServiceTest   ~5 tests  ← rotation, reuse detection, client binding
-  IntrospectionControllerTest ~4 tests ← active, expired, revoked tokens
-  RevocationControllerTest  ~3 tests  ← immediate revocation
+  TokenServiceTest           ~5 tests  ← refresh rotation, reuse detection, family sweep
 ```

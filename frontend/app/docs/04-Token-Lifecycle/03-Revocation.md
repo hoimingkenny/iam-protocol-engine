@@ -25,7 +25,7 @@ Client → GET /api/resource (Bearer at_123) → 401
 ## The Revocation Endpoint
 
 ```
-POST /revoke
+POST /oauth2/revoke
 Content-Type: application/x-www-form-urlencoded
 
 token        = <token_to_revoke>
@@ -103,12 +103,12 @@ After step 1, even if the attacker steals the access token, it will expire withi
 
 ```bash
 # Revoke an access token
-curl -X POST http://localhost:8080/revoke \
+curl -X POST http://localhost:8080/oauth2/revoke \
   -d "token=<ACCESS_TOKEN>" \
   -H "Authorization: Basic $(echo -n 'test-client:test-secret' | base64)"
 
 # Confirm it's revoked
-curl -X POST http://localhost:8080/introspect \
+curl -X POST http://localhost:8080/oauth2/introspect \
   -d "token=<ACCESS_TOKEN>" \
   -H "Authorization: Basic $(echo -n 'test-client:test-secret' | base64)"
 # → {"active": false}

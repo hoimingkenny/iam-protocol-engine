@@ -488,11 +488,12 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 4 🚧 In Progress
+### Checkpoint: Phase 4 ✅
 
-- [ ] Refresh rotation works (Task 13) — learning doc written; code not yet implemented
-- [ ] Introspect + revoke work (Task 14) — learning doc written; code not yet implemented
-- [ ] SC-03, SC-04 from SPEC.md satisfied
+- [x] Refresh rotation works (Task 13) — learning doc written; code implemented in `TokenService.handleRefreshTokenGrant()`
+- [x] Introspect + revoke work (Task 14) — learning doc written; `IntrospectionController` + `RevocationController` implemented
+- [x] SC-03, SC-04 from SPEC.md satisfied
+- [x] Learning site chapters written (`frontend/app/docs/04-Token-Lifecycle/`)
 - [ ] Human reviews before Phase 5
 
 ---

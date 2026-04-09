@@ -30,7 +30,7 @@ Resource Server → 200 OK
 ## The Introspection Endpoint
 
 ```
-POST /introspect
+POST /oauth2/introspect
 Content-Type: application/x-www-form-urlencoded
 
 token        = <access_token>
@@ -108,12 +108,12 @@ The introspection endpoint is designed to support any token type, not just acces
 
 ```bash
 # Active token
-curl -X POST http://localhost:8080/introspect \
+curl -X POST http://localhost:8080/oauth2/introspect \
   -d "token=<ACCESS_TOKEN>" \
   -H "Authorization: Basic $(echo -n 'test-client:test-secret' | base64)" | jq .
 
 # Expired or revoked token
-curl -X POST http://localhost:8080/introspect \
+curl -X POST http://localhost:8080/oauth2/introspect \
   -d "token=<REVOKED_OR_EXPIRED_TOKEN>" \
   -H "Authorization: Basic $(echo -n 'test-client:test-secret' | base64)" | jq .
 # → {"active": false}
