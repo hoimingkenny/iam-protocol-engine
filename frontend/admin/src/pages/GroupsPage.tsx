@@ -1,7 +1,12 @@
-import { Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 export function GroupsPage() {
   return (
-    <Typography variant="h5">Groups Management — SCIM Phase (future)</Typography>
+    <Box>
+      <Typography variant="h5" sx={{ mb: 1, fontWeight: 700 }}>Groups</Typography>
+      <Typography variant="body2" color="text.secondary">
+        SCIM Group management — full implementation arrives in Phase 6.
+      </Typography>
+    </Box>
   );
 }
