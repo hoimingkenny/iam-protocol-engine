@@ -30,9 +30,9 @@ public class IdTokenGenerator {
     private final String issuer;
 
     public IdTokenGenerator(JwksService jwksService,
-                            @Value("${server.port:8080}") int port) {
+                            @Value("${iam.issuer}") String issuer) {
         this.jwksService = jwksService;
-        this.issuer = "http://localhost:" + port;
+        this.issuer = issuer;
     }
 
     /**

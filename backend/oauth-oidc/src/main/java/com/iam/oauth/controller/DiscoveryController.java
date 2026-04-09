@@ -22,11 +22,8 @@ public class DiscoveryController {
 
     private final String issuer;
 
-    public DiscoveryController(@Value("${server.port:8080}") int port,
-                               @Value("${server.servlet.context-path:}") String contextPath) {
-        // Build issuer from server config — no trailing slash
-        String base = "http://localhost:" + port;
-        this.issuer = contextPath.isEmpty() ? base : base + contextPath;
+    public DiscoveryController(@Value("${iam.issuer}") String issuer) {
+        this.issuer = issuer;
     }
 
     /**
