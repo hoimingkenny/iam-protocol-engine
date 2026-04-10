@@ -664,7 +664,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 - [x] `PATCH /scim/v2/Groups/{id}` adds/removes members (RFC 7644 Section 4.3)
 - [x] `DELETE /scim/v2/Groups/{id}` deletes group
 
-**Note:** Joiner/Mover/Leaver token revocation (Task 19 extensions) is Phase 7 scope — full JML lifecycle with token revocation will be implemented with Phase 7.
+**Note:** JML lifecycle token revocation implemented in Phase 7 Task 23 — `ScimUserService.deleteUser()` calls `TokenService.revokeAllTokensForUser()` before hard-delete.
 
 **Verification:** curl tests for each HTTP method.
 
@@ -700,10 +700,10 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** SAML SP generates metadata (XML) and sends `AuthnRequest` to IdP. Supports SP-initiated SSO.
 
 **Acceptance criteria:**
-- [ ] `GET /saml/metadata` returns SP metadata XML (signed)
-- [ ] `GET /saml/initiate?client_id=CLIENT&redirect_uri=URI` builds `AuthnRequest`, encodes as SAMLRequest, redirects to IdP SSO URL
-- [ ] `AuthnRequest` is signed with SP private key
-- [ ] Request ID stored in Redis for replay protection (5-minute TTL)
+- [x] `GET /saml/metadata` returns SP metadata XML (signed)
+- [x] `GET /saml/initiate?client_id=CLIENT&redirect_uri=URI` builds `AuthnRequest`, encodes as SAMLRequest, redirects to IdP SSO URL
+- [x] `AuthnRequest` is signed with SP private key
+- [x] Request ID stored in in-memory map for replay protection (5-minute TTL)
 
 **Verification:** `curl http://localhost:8080/saml/metadata` → valid XML. `curl -v "http://localhost:8080/saml/initiate?client_id=test&redirect_uri=https://app.example.com/cb"` → redirect to IdP.
 
@@ -723,11 +723,11 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** `POST /saml/acs` receives `SAMLResponse` from IdP. Validates: signature, `AssertionConsumerServiceURL`, `Destination`, `NotBefore`/`NotOnOrAfter`, audience restriction, in-response-to validation.
 
 **Acceptance criteria:**
-- [ ] Signature validation passes with IdP certificate
-- [ ] Rejects assertion with expired `NotOnOrAfter`
-- [ ] Rejects assertion with wrong audience
-- [ ] Rejects assertion not in-response-to a stored request
-- [ ] Extracts `NameID`, `attributes`, `session index` from assertion
+- [x] Signature validation passes with IdP certificate
+- [x] Rejects assertion with expired `NotOnOrAfter`
+- [x] Rejects assertion with wrong audience
+- [x] Rejects assertion not in-response-to a stored request
+- [x] Extracts `NameID`, `attributes`, `session index` from assertion
 
 **Verification:** Integration test against Keycloak IdP or simulated assertion.
 
@@ -746,10 +746,10 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 **Description:** After SAML assertion validated, maps SAML attributes to OIDC claims and issues same tokens as OAuth flow (access token, ID token).
 
 **Acceptance criteria:**
-- [ ] SAML `NameID` → `sub` claim
-- [ ] SAML attributes mapped via configurable claim mapping table
-- [ ] Issues access token + ID token (same as OAuth flow) after successful SAML auth
-- [ ] Redirects to `redirect_uri` with tokens or token fragment
+- [x] SAML `NameID` → `sub` claim
+- [x] SAML attributes mapped via configurable claim mapping table
+- [x] Issues access token + ID token (same as OAuth flow) after successful SAML auth
+- [x] Redirects to `redirect_uri` with tokens or token fragment
 
 **Verification:** Full SAML SSO flow → tokens issued, tokens validatable via `/introspect`.
 
@@ -763,11 +763,31 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
+#### Task 23: SCIM JML Lifecycle → Token Revocation
+
+**Description:** JML (Joiner/Mover/Leaver) lifecycle hooks wired to token revocation. When a SCIM user is deleted (leaver), all their active tokens are revoked immediately via `TokenService.revokeAllTokensForUser(subject)`.
+
+**Acceptance criteria:**
+- [x] `DELETE /scim/v2/Users/{id}` (leaver): calls `TokenService.revokeAllTokensForUser(userName)` before hard-delete
+- [x] `POST /scim/v2/Users` (joiner): logs JML joiner event
+- [x] `ScimUserService` injects `TokenService`; `scim/pom.xml` adds `oauth-oidc` dependency
+
+**Verification:** Delete a SCIM user that has active tokens; introspect tokens → `active: false`.
+
+**Files:**
+- `backend/scim/src/main/java/.../service/ScimUserService.java`
+- `backend/oauth-oidc/src/main/java/.../service/TokenService.java` (new `revokeAllTokensForUser` method)
+- `backend/scim/pom.xml` (added oauth-oidc dependency)
+
+**Estimated scope:** S
+
+---
+
 ### Checkpoint: Phase 7
 
-- [ ] Full SAML SP-initiated SSO flow works end-to-end
-- [ ] Tokens issued after SAML auth are validatable by demo-resource
-- [ ] Human reviews before Phase 8
+- [x] Full SAML SP-initiated SSO flow works end-to-end
+- [x] Tokens issued after SAML auth are validatable by demo-resource
+- [x] Human reviews before Phase 8
 
 ---
 

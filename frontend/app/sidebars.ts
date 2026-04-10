@@ -50,6 +50,14 @@ const sidebars: SidebarsConfig = {
     'SCIM/Groups',
   ],
 
+  saml: [
+    'SAML/Overview',
+    'SAML/SP-Metadata',
+    'SAML/AuthnRequest',
+    'SAML/ACS',
+    'SAML/SAML-OIDC-Bridge',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',

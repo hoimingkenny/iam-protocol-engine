@@ -1,0 +1,126 @@
+---
+title: ACS — Assertion Consumer Service
+description: How the SP validates incoming SAML assertions and extracts identity data.
+---
+
+# ACS — `POST /saml/acs`
+
+## What Is the ACS?
+
+The Assertion Consumer Service (ACS) is the endpoint where the IdP POSTs the SAML assertion after authenticating the user. The SP must validate the assertion before trusting any of the identity data in it.
+
+## ACS Request
+
+The IdP sends an HTML form with the SAMLResponse:
+
+```html
+<form action="http://localhost:8080/saml/acs" method="post">
+  <input type="hidden" name="SAMLResponse" value="Base64EncodedAssertion" />
+  <input type="hidden" name="RelayState" value="Base64EncodedState" />
+</form>
+```
+
+The SP decodes the `SAMLResponse` and runs 7 validation checks.
+
+## 7-Step Validation
+
+### Step 1: XML Signature Validation
+
+The entire SAMLResponse XML is signed by the IdP. The SP verifies this signature using the IdP's public certificate (configured via `saml.idp.signing-cert`):
+
+```java
+NodeList signatureNodes = doc.getElementsByTagNameNS(
+    "http://www.w3.org/2000/09/xmldsig#", "Signature");
+DOMValidateContext validateContext = new DOMValidateContext(
+    idpPublicKey, signatureNodes.item(0));
+XMLSignature signature = signatureFactory.unmarshallSignature(validateContext);
+boolean valid = signature.validate(validateContext);
+```
+
+If the signature is invalid, the assertion is rejected. This is the most critical check — it proves the assertion actually came from the expected IdP.
+
+### Step 2: InResponseTo Replay Protection
+
+The assertion contains an `InResponseTo` attribute that must match a request ID the SP previously issued:
+
+```java
+String inResponseTo = assertion.getDOM()
+    .getAttribute("InResponseTo");
+if (inResponseTo != null && !pendingRequests.containsKey(inResponseTo)) {
+    throw new ValidationException("InResponseTo mismatch or expired");
+}
+pendingRequests.remove(inResponseTo); // Consume the request ID
+```
+
+This prevents replay attacks where an attacker reuses a captured assertion.
+
+### Step 3: Destination Validation
+
+The assertion's `<SubjectConfirmationData>` element has a `Destination` attribute that must match the SP's ACS URL:
+
+```java
+String destination = subjectConfirmationData.getDOM()
+    .getAttribute("Destination");
+if (!acsUrl.equals(destination)) {
+    throw new ValidationException("Destination mismatch");
+}
+```
+
+This ensures the assertion was intended for this SP, not another one.
+
+### Step 4: Timing Validation — NotBefore / NotOnOrAfter
+
+SAML assertions have a validity window:
+
+```java
+Instant notBefore = parseNotBefore(assertion);
+Instant notOnOrAfter = parseNotOnOrAfter(assertion);
+Instant now = Instant.now();
+
+if (now.isBefore(notBefore))    throw new ValidationException("NotBefore not satisfied");
+if (now.isAfter(notOnOrAfter))  throw new ValidationException("NotOnOrAfter expired");
+```
+
+An assertion too old or from the future is rejected.
+
+### Step 5: AudienceRestriction
+
+The assertion must be intended for this SP:
+
+```java
+String audience = audienceRestriction.getAudience().get URI();
+if (!spEntityId.equals(audience)) {
+    throw new ValidationException("Audience mismatch");
+}
+```
+
+This prevents an assertion issued for one SP from being used at another SP.
+
+### Step 6: SubjectConfirmation Timing
+
+The `<SubjectConfirmationData>` has its own `NotOnOrAfter` which may be shorter than the assertion's overall validity window:
+
+```java
+if (now.isAfter(subjectConfirmationData.getNotOnOrAfter())) {
+    throw new ValidationException("SubjectConfirmation expired");
+}
+```
+
+### Step 7: Consume Request ID
+
+The request ID is consumed after successful validation to prevent any replay of this specific assertion.
+
+## What Gets Extracted
+
+After all validations pass, the SP extracts:
+
+```java
+String nameId = assertion.getSubject().getNameID().getValue();
+String sessionIndex = response.getSessionIndexes().get(0);
+```
+
+The `NameID` is the SAML equivalent of the OAuth `sub` claim — it's the stable identifier for the user at this IdP.
+
+## What Happens Next
+
+After extraction, control passes to the SAML → OIDC Bridge, which issues OIDC tokens using the NameID as the subject.
