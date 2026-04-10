@@ -65,6 +65,12 @@ const sidebars: SidebarsConfig = {
     'MFA/Device-Flow',
   ],
 
+  demoHardening: [
+    'Demo-Hardening/Overview',
+    'Demo-Hardening/Demo-Script',
+    'Demo-Hardening/Architecture',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',

@@ -48,7 +48,7 @@ User → SAML SP → Enterprise IdP → signed SAMLResponse → claim mapping �
 ### SCIM Leaver
 
 ```
-IGA tool → DELETE or PATCH /scim/v2/Users/{id} → user disabled → tokens revoked
+IGA tool → DELETE or PATCH /scim/v2/Users/{{id}} → user disabled → tokens revoked
 ```
 
 ## High-Level Architecture
@@ -95,13 +95,13 @@ graph TD
 | POST | `/saml/acs` | SAML Assertion Consumer Service |
 | POST | `/scim/v2/Users` | Create SCIM user (joiner) |
 | GET | `/scim/v2/Users` | List/search SCIM users |
-| GET | `/scim/v2/Users/{id}` | Get SCIM user |
-| PUT | `/scim/v2/Users/{id}` | Replace SCIM user (mover) |
-| DELETE | `/scim/v2/Users/{id}` | Delete SCIM user (leaver) |
+| GET | `/scim/v2/Users/{{id}}` | Get SCIM user |
+| PUT | `/scim/v2/Users/{{id}}` | Replace SCIM user (mover) |
+| DELETE | `/scim/v2/Users/{{id}}` | Delete SCIM user (leaver) |
 | POST | `/scim/v2/Groups` | Create SCIM group |
 | GET | `/scim/v2/Groups` | List/search SCIM groups |
-| GET | `/scim/v2/Groups/{id}` | Get SCIM group |
-| PATCH | `/scim/v2/Groups/{id}` | Modify SCIM group membership |
+| GET | `/scim/v2/Groups/{{id}}` | Get SCIM group |
+| PATCH | `/scim/v2/Groups/{{id}}` | Modify SCIM group membership |
 | POST | `/device_authorization` | Device flow start |
 | GET | `/device` | Human approval page for device flow |
 | POST | `/webauthn/register/begin` | WebAuthn registration challenge |

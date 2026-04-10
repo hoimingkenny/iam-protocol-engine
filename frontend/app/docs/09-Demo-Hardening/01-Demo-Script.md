@@ -1,0 +1,261 @@
+---
+title: Demo Script Walkthrough
+sidebar_position: 2
+description: scripts/demo-e2e.sh — what each section does, expected outputs, and how to read the results.
+---
+
+# Demo Script — `scripts/demo-e2e.sh`
+
+**Script:** `scripts/demo-e2e.sh`
+**Lines:** 429
+**Sections:** 12
+**Mode:** `./scripts/demo-e2e.sh` (full) or `./scripts/demo-e2e.sh --quick` (OAuth + OIDC only)
+
+---
+
+## Running the Script
+
+```bash
+# Prerequisites (must be running):
+#   docker compose -f infra/docker-compose.yml up -d
+#   ./mvnw flyway:migrate -pl backend/auth-core
+#   ./mvnw spring-boot:run -pl backend/api-gateway
+
+./scripts/demo-e2e.sh
+```
+
+Colored output:
+- **Yellow (`▶`)** — step being executed
+- **Green (`✓`)** — step passed with expected response
+- **Red (`✗`)** — step failed (script exits non-zero)
+
+---
+
+## Section-by-Section Walkthrough
+
+### Section 1 — Health Check
+
+```bash
+curl http://localhost:8080/actuator/health
+→ {"status":"UP"}
+```
+
+Confirms the Spring Boot app is up and connected to PostgreSQL + Redis. If this fails, subsequent sections will also fail.
+
+---
+
+### Section 2 — OIDC Discovery
+
+```bash
+# Discovery document
+curl http://localhost:8080/.well-known/openid-configuration
+→ {"issuer": "http://localhost:8080", "authorization_endpoint": "...", ...}
+
+# JWKS
+curl http://localhost:8080/.well-known/jwks.json
+→ {"keys": [{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": "...", ...}]}
+```
+
+Verifies OIDC discovery endpoints are responding with correctly-structured JSON. The `issuer` must be `http://localhost:8080` and the JWKS must contain RSA keys with `kid`.
+
+---
+
+### Section 3 — OAuth 2.0 Auth Code + PKCE
+
+```bash
+# Step 1: Authorize — returns 302 with auth code in redirect URL
+GET /oauth2/authorize?client_id=test-client&redirect_uri=https://app.example.com/callback&response_type=code&scope=openid%20profile%20email&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&subject=user1
+→ 302 → https://app.example.com/callback?code=AUTHCODE&state=demo
+
+# Step 2: Exchange — verifies code_challenge against code_verifier, issues tokens
+POST /oauth2/token (grant_type=authorization_code, code=AUTHCODE, code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk)
+→ {"access_token": "...", "refresh_token": "...", "id_token": "...", "token_type": "Bearer", "expires_in": 3600}
+```
+
+PKCE test vector used:
+```
+code_verifier:  dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+code_challenge: E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM  (SHA256 of verifier, Base64URL)
+```
+
+The `code_challenge` in the URL is the RFC 7636 test vector — this verifies the S256 computation is correct.
+
+---
+
+### Section 4 — Protected Resource
+
+```bash
+# No token → 401
+curl http://localhost:8080/api/resource
+→ 401 Unauthorized
+
+# Valid token → 200
+curl -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/api/resource
+→ {"message": "You accessed a protected resource", "subject": "user1"}
+```
+
+The `demo-resource` module validates every Bearer token against the PostgreSQL `token` table before allowing access. Token must be `active=true`, not expired, not revoked.
+
+---
+
+### Section 5 — Token Introspection + Revocation
+
+```bash
+# Active token
+POST /oauth2/introspect
+→ {"active": true, "sub": "user1", "client_id": "test-client", "scope": "openid profile email", ...}
+
+# After revocation
+POST /oauth2/revoke (token=$ACCESS_TOKEN)
+→ 200 OK
+
+POST /oauth2/introspect (after revoke)
+→ {"active": false}
+```
+
+RFC 7009 (§2.2): revocation always returns 200 to prevent token enumeration attacks. The token is marked `revoked=true` in PostgreSQL, making introspection return `active: false` immediately.
+
+---
+
+### Section 6 — Refresh Token Rotation
+
+```bash
+# First refresh → new access token + new refresh token
+POST /oauth2/token (grant_type=refresh_token, refresh_token=R1)
+→ {"access_token": "AT_new", "refresh_token": "RT_new"}
+
+# Second use of old R1 → invalid_grant
+POST /oauth2/token (grant_type=refresh_token, refresh_token=R1)
+→ {"error": "invalid_grant", "error_description": "..."}
+```
+
+This is the key security property of refresh token rotation: if an attacker obtains an old refresh token and tries to reuse it, the entire token family is revoked (old refresh + paired access token). The legitimate client already moved to the new refresh token, so only the attacker's reuse fails.
+
+---
+
+### Section 7 — OIDC /userinfo
+
+```bash
+GET /userinfo
+Authorization: Bearer $ACCESS_TOKEN
+→ {"sub": "user1", "scope": "openid profile email"}
+```
+
+`/userinfo` returns OIDC claims for the authenticated subject. The `sub` must match what was passed to `/authorize`. `email` and `name` claims require their respective scopes.
+
+---
+
+### Section 8 — SCIM 2.0
+
+```bash
+# Joiner — create user
+POST /scim/v2/Users
+→ 201 Created, Location: http://localhost:8080/scim/v2/Users/{uuid}
+
+# Get user
+GET /scim/v2/Users/{id}
+→ 200 OK (SCIM User schema)
+
+# Create group
+POST /scim/v2/Groups
+→ 201 Created
+
+# Leaver — deletes user AND revokes all active tokens
+DELETE /scim/v2/Users/{id}
+→ 204 No Content
+```
+
+The **Leaver flow** (JML lifecycle) is the critical integration point: `ScimUserService.deleteUser()` calls `TokenService.revokeAllTokensForUser(userName)` before the hard delete, ensuring the departing user's tokens are immediately invalidated.
+
+---
+
+### Section 9 — Device Authorization Grant (RFC 8628)
+
+```bash
+# Device requests authorization
+POST /device_authorization (client_id=test-client, scope=openid profile email)
+→ {"device_code": "GmRhmhcxhwAzkoEqiMEy...", "user_code": "WDJB-MJHT",
+    "verification_uri": "http://localhost:8080/device",
+    "expires_in": 600, "interval": 5}
+
+# User approves in browser
+POST /device/approve (user_code=WDJB-MJHT)
+→ 200 OK
+
+# Device polls
+POST /oauth2/token (grant_type=urn:ietf:params:oauth:grant-type:device_code, device_code=...)
+→ {"access_token": "...", "refresh_token": "...", ...}
+```
+
+The 16-character `user_code` is displayed on the device (e.g., smart TV) and typed on the user's phone to approve access. The `device_code` is used by the device to poll for approval.
+
+---
+
+### Section 10 — TOTP MFA (RFC 6238)
+
+```bash
+# Enroll TOTP
+POST /mfa/totp/setup
+Authorization: Bearer $ACCESS_TOKEN
+→ {"secret": "JBSWY3DPEHPK3PXP", "provisioningUri": "otpauth://totp/...", "qrCodeImage": "..."}
+
+# Check status
+GET /mfa/totp/status
+Authorization: Bearer $ACCESS_TOKEN
+→ {"enrolled": true}
+```
+
+The `provisioningUri` follows the [Google Authenticator Key URI Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format) and can be scanned by any TOTP app. The secret is AES-256-GCM encrypted at rest.
+
+---
+
+### Section 11 — SAML SP Metadata
+
+```bash
+# SP metadata (signed XML)
+GET /saml/metadata
+→ 200 OK (application/xml, signed EntityDescriptor)
+
+# Initiate SSO — redirects to IdP with signed AuthnRequest
+GET /saml/initiate?client_id=test-client&redirect_uri=https://app.example.com/callback
+→ 302 → https://idp.example.com/SAML2/SSO?SAMLRequest=...
+```
+
+The `GET /saml/initiate` is SP-initiated SSO — builds a signed `AuthnRequest` and redirects to the configured IdP. Real IdP integration requires registering the SP metadata (`/saml/metadata`) with the IdP first.
+
+---
+
+### Section 12 — JWKS Key Rotation
+
+```bash
+# Rotate to new key
+POST /.well-known/jwks.json
+→ {"status": "rotated", "new_kid": "key-2024-...", "message": "Key rotated successfully"}
+
+# Verify 2 keys now present
+GET /.well-known/jwks.json
+→ {"keys": [OLD_KEY, NEW_KEY]}
+```
+
+Key rotation is designed in from day one: the `kid` appears in every RS256 JWT's header, and the server accepts both old and new keys for validation. Old tokens signed with the previous key remain valid — only new tokens use the new key.
+
+---
+
+## Quick Mode
+
+```bash
+./scripts/demo-e2e.sh --quick
+```
+
+Runs only Sections 1–3 (health check, discovery, OAuth PKCE flow) — useful for quick verification without triggering long-running flows like device polling or MFA enrollment.
+
+---
+
+## Customisation
+
+Override base URL or client credentials:
+
+```bash
+BASE_URL=https://auth.example.com ./scripts/demo-e2e.sh
+CLIENT_ID=my-client REDIRECT_URI=https://myapp.example.com/callback ./scripts/demo-e2e.sh
+```

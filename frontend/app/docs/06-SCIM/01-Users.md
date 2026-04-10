@@ -64,7 +64,7 @@ Authorization: Bearer <token>
 
 Supports filtering by `userName` (simple substring match, case-insensitive). Pagination via `startIndex` (1-based) and `count`.
 
-### GET /scim/v2/Users/{id} — Get User
+### GET /scim/v2/Users/&#123;id&#125; — Get User
 
 ```
 GET /scim/v2/Users/{uuid}
@@ -74,7 +74,7 @@ Authorization: Bearer <token>
 → 404 Not Found if not found
 ```
 
-### PUT /scim/v2/Users/{id} — Replace User (Mover Flow)
+### PUT /scim/v2/Users/&#123;id&#125; — Replace User (Mover Flow)
 
 ```
 PUT /scim/v2/Users/{uuid}
@@ -95,7 +95,7 @@ Authorization: Bearer <token>
 
 Replaces all mutable fields. The `id`, `createdAt`, and `location` are preserved.
 
-### DELETE /scim/v2/Users/{id} — Delete User (Leaver Flow)
+### DELETE /scim/v2/Users/&#123;id&#125; — Delete User (Leaver Flow)
 
 ```
 DELETE /scim/v2/Users/{uuid}

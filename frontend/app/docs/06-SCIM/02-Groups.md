@@ -51,7 +51,7 @@ Authorization: Bearer <token>
 
 Supports filtering by `displayName` (substring match, case-insensitive).
 
-### GET /scim/v2/Groups/{id} — Get Group
+### GET /scim/v2/Groups/&#123;id&#125; — Get Group
 
 ```
 GET /scim/v2/Groups/{uuid}
@@ -61,7 +61,7 @@ Authorization: Bearer <token>
 → 404 Not Found if not found
 ```
 
-### PATCH /scim/v2/Groups/{id} — Modify Members (RFC 7644 §4.3)
+### PATCH /scim/v2/Groups/&#123;id&#125; — Modify Members (RFC 7644 §4.3)
 
 The PATCH body is a JSON array of operations. Each operation has:
 - `op`: `"add"` or `"remove"`
@@ -69,7 +69,7 @@ The PATCH body is a JSON array of operations. Each operation has:
 
 ```bash
 # Add members
-PATCH /scim/v2/Groups/{id}
+PATCH /scim/v2/Groups/&#123;id&#125;
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -80,7 +80,7 @@ Authorization: Bearer <token>
 → 200 OK, Body: ScimGroupDto with updated members
 
 # Remove members
-PATCH /scim/v2/Groups/{id}
+PATCH /scim/v2/Groups/&#123;id&#125;
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -92,7 +92,7 @@ Authorization: Bearer <token>
 
 The server validates that all member IDs refer to existing users before persisting. Invalid member IDs → 400 Bad Request.
 
-### DELETE /scim/v2/Groups/{id} — Delete Group
+### DELETE /scim/v2/Groups/&#123;id&#125; — Delete Group
 
 ```
 DELETE /scim/v2/Groups/{uuid}
@@ -150,4 +150,4 @@ public Object patchGroup(UUID id, List<Map<String, Object>> operations) {
 
 **PATCH is idempotent for add.** Adding the same member twice is a no-op (Set deduplication).
 
-**Location header on create.** All resources return `Location: http://localhost:8080/scim/v2/.../{id}` per RFC 7644 §5.2.
+**Location header on create.** All resources return `Location: http://localhost:8080/scim/v2/.../{{id}}` per RFC 7644 §5.2.

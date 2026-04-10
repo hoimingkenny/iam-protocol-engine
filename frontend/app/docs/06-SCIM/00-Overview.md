@@ -17,15 +17,15 @@ Client (e.g. Admin UI, SCIM-compatible IdP)
     │
     ├─ POST   /scim/v2/Users         → Create user  (joiner)
     ├─ GET    /scim/v2/Users         → List users
-    ├─ GET    /scim/v2/Users/{id}    → Get user
-    ├─ PUT    /scim/v2/Users/{id}    → Replace user (mover)
-    ├─ DELETE /scim/v2/Users/{id}    → Delete user  (leaver)
+    ├─ GET    /scim/v2/Users/{{id}}    → Get user
+    ├─ PUT    /scim/v2/Users/{{id}}    → Replace user (mover)
+    ├─ DELETE /scim/v2/Users/{{id}}    → Delete user  (leaver)
     │
     ├─ POST   /scim/v2/Groups         → Create group
     ├─ GET    /scim/v2/Groups         → List groups
-    ├─ GET    /scim/v2/Groups/{id}   → Get group
-    ├─ PATCH  /scim/v2/Groups/{id}    → Add/remove members (RFC 7644 §4.3)
-    └─ DELETE /scim/v2/Groups/{id}   → Delete group
+    ├─ GET    /scim/v2/Groups/{{id}}   → Get group
+    ├─ PATCH  /scim/v2/Groups/{{id}}    → Add/remove members (RFC 7644 §4.3)
+    └─ DELETE /scim/v2/Groups/{{id}}   → Delete group
 
 All endpoints require Bearer token authentication.
 ```
@@ -73,12 +73,12 @@ DELETE /scim/v2/Users/{uuid}
 
 ```bash
 # Add members
-PATCH /scim/v2/Groups/{id}
+PATCH /scim/v2/Groups/{{id}}
 Content-Type: application/json
 [{ "op": "add", "members": [{ "value": "user-uuid" }] }]
 
 # Remove members
-PATCH /scim/v2/Groups/{id}
+PATCH /scim/v2/Groups/{{id}}
 Content-Type: application/json
 [{ "op": "remove", "members": [{ "value": "user-uuid" }] }]
 ```
