@@ -109,7 +109,7 @@ main
 3. Implement, test, commit on the task branch
 4. Merge task branch into `phase-N-develop` (squash or fast-forward — prefer squash for clean history)
 5. Repeat for all tasks
-6. When all tasks done: merge `phase-N-develop` into `main`
+6. When all tasks done and tested: merge `phase-N-develop` into `main`
 7. Update `IMPLEMENTATION_PLAN.md` checkpoint to mark phase complete
 
 ### Commits
