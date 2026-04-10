@@ -923,7 +923,7 @@ Phase 7 SAML collection includes:
 
 ---
 
-### Phase 8: Demo Hardening
+### Phase 9: Demo Hardening
 
 ---
 
@@ -932,10 +932,10 @@ Phase 7 SAML collection includes:
 **Description:** Bash script that runs through all major flows: OAuth, OIDC, SCIM, SAML, Device, MFA. Each step prints expected output.
 
 **Acceptance criteria:**
-- [ ] Script idempotent (can be run on clean `up -d`)
-- [ ] Each flow has curl command + expected output comment
-- [ ] All flows complete without manual intervention
-- [ ] Script output is copy-pasteable for demo
+- [x] Script idempotent (can be run on clean `up -d`)
+- [x] Each flow has curl command + expected output comment
+- [x] All flows complete without manual intervention
+- [x] Script output is copy-pasteable for demo
 
 **Verification:** Script runs end-to-end on clean environment.
 
@@ -953,10 +953,10 @@ Phase 7 SAML collection includes:
 **Description:** `README.md` with architecture overview, tech stack, module responsibilities, and Mermaid sequence diagrams for each major flow.
 
 **Acceptance criteria:**
-- [ ] README includes architecture diagram (mermaid)
-- [ ] Each protocol flow has a sequence diagram
-- [ ] Setup instructions: how to start, how to run demo
-- [ ] All module responsibilities clearly documented
+- [x] README includes architecture diagram (mermaid)
+- [x] Each protocol flow has a sequence diagram
+- [x] Setup instructions: how to start, how to run demo
+- [x] All module responsibilities clearly documented
 
 **Verification:** README renders correctly on GitHub (mermaid diagrams).
 
@@ -969,25 +969,25 @@ Phase 7 SAML collection includes:
 
 ---
 
-### Checkpoint: Phase 10
+### Checkpoint: Phase 9
 
-- [ ] Demo script runs clean
-- [ ] README is complete and accurate
-- [ ] SC-01 through SC-15 all satisfied (from SPEC.md)
-- [ ] Human final review — project complete
+- [x] Demo script runs clean
+- [x] README is complete and accurate
+- [x] SC-01 through SC-15 all satisfied (from SPEC.md)
+- [x] Human final review — project complete
 
 ---
 
-### Learning Site: Phase 10 Chapters
+### Learning Site: Phase 9 Chapters
 
-**Location:** `frontend/app/docs/10-Demo-Hardening/`
+**Location:** `frontend/app/docs/09-Demo-Hardening/`
 **Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
 
 | Chapter | Source |
 |---------|--------|
-| `10-Demo-Hardening/00-Overview` | Phase 10 overview, demo readiness |
-| `10-Demo-Hardening/01-Demo-Script` | `scripts/demo-e2e.sh` walkthrough |
-| `10-Demo-Hardening/02-Architecture` | README architecture, module map, sequence diagrams |
+| `09-Demo-Hardening/00-Overview` | Phase 9 overview, demo readiness |
+| `09-Demo-Hardening/01-Demo-Script` | `scripts/demo-e2e.sh` walkthrough |
+| `09-Demo-Hardening/02-Architecture` | README architecture, module map, sequence diagrams |
 
 ---
 
