@@ -1,5 +1,8 @@
 package com.iam.oauth.controller;
 
+import com.iam.authcore.entity.DeviceCode;
+import com.iam.authcore.repository.DeviceCodeRepository;
+import com.iam.authcore.repository.OAuthClientRepository;
 import com.iam.oauth.dto.TokenRequest;
 import com.iam.oauth.dto.TokenResponse;
 import com.iam.oauth.service.TokenService;
@@ -7,7 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * OAuth 2.0 Token Endpoint per RFC 6749 §3.2.
@@ -18,15 +23,22 @@ import java.util.Map;
  * - grant_type=authorization_code  (code exchange with PKCE)
  * - grant_type=client_credentials (machine-to-machine)
  * - grant_type=refresh_token      (token refresh/rotation)
+ * - grant_type=urn:ietf:params:oauth:grant-type:device_code (RFC 8628)
  */
 @RestController
 @RequestMapping("/oauth2")
 public class TokenController {
 
     private final TokenService tokenService;
+    private final DeviceCodeRepository deviceCodeRepo;
+    private final OAuthClientRepository clientRepo;
 
-    public TokenController(TokenService tokenService) {
+    public TokenController(TokenService tokenService,
+                            DeviceCodeRepository deviceCodeRepo,
+                            OAuthClientRepository clientRepo) {
         this.tokenService = tokenService;
+        this.deviceCodeRepo = deviceCodeRepo;
+        this.clientRepo = clientRepo;
     }
 
     /**
@@ -45,6 +57,7 @@ public class TokenController {
             @RequestParam(value = "client_secret", required = false) String clientSecret,
             @RequestParam(value = "refresh_token", required = false) String refreshToken,
             @RequestParam(value = "scope", required = false) String scope,
+            @RequestParam(value = "device_code", required = false) String deviceCode,
             @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
         // Support client_id from Basic auth header (RFC 6749 §2.3.1)
@@ -54,6 +67,11 @@ public class TokenController {
                 clientId = credentials[0];
                 clientSecret = credentials[1];
             }
+        }
+
+        // RFC 8628: Device Authorization Grant
+        if ("urn:ietf:params:oauth:grant-type:device_code".equals(grantType)) {
+            return handleDeviceCodeGrant(clientId, deviceCode);
         }
 
         TokenRequest request = new TokenRequest(
@@ -69,6 +87,76 @@ public class TokenController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * RFC 8628 §3.5 — Device Code Polling.
+     *
+     * Device polls this endpoint with device_code until:
+     * - User approves → tokens issued (200)
+     * - User denies → authorization_denied (400)
+     * - Expired → token expired (400)
+     * - Not yet approved → authorization_pending (400)
+     */
+    private ResponseEntity<TokenResponse> handleDeviceCodeGrant(String clientId, String deviceCode) {
+        if (deviceCode == null || deviceCode.isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(TokenResponse.error("invalid_request", "device_code required"));
+        }
+        if (clientId == null || clientId.isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(TokenResponse.error("invalid_request", "client_id required"));
+        }
+
+        Optional<DeviceCode> opt = deviceCodeRepo.findById(deviceCode);
+        if (opt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(TokenResponse.error("invalid_grant", "device_code not found"));
+        }
+
+        DeviceCode dc = opt.get();
+
+        // Verify client_id matches
+        if (!dc.getClientId().equals(clientId)) {
+            return ResponseEntity.badRequest()
+                .body(TokenResponse.error("invalid_grant", "client_id mismatch"));
+        }
+
+        // Check expiry
+        if (dc.getExpiresAt().isBefore(Instant.now())) {
+            return ResponseEntity.badRequest()
+                .body(TokenResponse.error("token_expired", "device code has expired"));
+        }
+
+        switch (dc.getStatus()) {
+            case approved -> {
+                // Issue tokens
+                TokenResponse response = tokenService.issueTokensForSamlUser(
+                    dc.getUserCode(),  // subject = user_code identifier
+                    dc.getClientId(),
+                    null,   // no nonce in device flow
+                    dc.getScope()
+                );
+                // Consume device code
+                deviceCodeRepo.deleteById(deviceCode);
+                return ResponseEntity.ok(response);
+            }
+            case denied -> {
+                return ResponseEntity.badRequest()
+                    .body(TokenResponse.error("access_denied", "user denied the request"));
+            }
+            case expired -> {
+                return ResponseEntity.badRequest()
+                    .body(TokenResponse.error("token_expired", "device code expired"));
+            }
+            default -> {
+                // pending — increment polling count
+                dc.setPollingCount(dc.getPollingCount() + 1);
+                deviceCodeRepo.save(dc);
+                return ResponseEntity.badRequest()
+                    .body(TokenResponse.error("authorization_pending", "waiting for user approval"));
+            }
+        }
     }
 
     private String[] decodeBasicAuth(String header) {

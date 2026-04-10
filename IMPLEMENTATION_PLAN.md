@@ -838,7 +838,7 @@ Phase 7 SAML collection includes:
 
 ---
 
-### Phase 9: Modern Auth
+### Phase 8: Modern Auth (TOTP + WebAuthn + Device Flow)
 
 ---
 
@@ -847,10 +847,10 @@ Phase 7 SAML collection includes:
 **Description:** TOTP enrollment (`/mfa/totp/setup`) and verification (`/mfa/totp/verify`). Uses `dev.samstevens.totp`.
 
 **Acceptance criteria:**
-- [ ] `POST /mfa/totp/setup` generates secret, returns provisioning URI + QR code payload
-- [ ] User verifies with TOTP code → `TotpCredential.verified=true`
-- [ ] Auth flow can require TOTP step-up after password verification
-- [ ] `POST /mfa/totp/verify` validates code; returns success/failure
+- [x] `POST /mfa/totp/setup` generates secret, returns provisioning URI + QR code payload
+- [x] User verifies with TOTP code → `TotpCredential.verified=true`
+- [x] Auth flow can require TOTP step-up after password verification
+- [x] `POST /mfa/totp/verify` validates code; returns success/failure
 
 **Verification:** Set up TOTP → scan QR with authenticator → verify with 6-digit code → success.
 
@@ -859,6 +859,7 @@ Phase 7 SAML collection includes:
 **Files:**
 - `backend/mfa/src/main/java/.../controller/TotpController.java`
 - `backend/mfa/src/main/java/.../service/TotpService.java`
+- `backend/auth-core/src/main/resources/db/migration/V3__add_totp_credential.sql`
 
 **Estimated scope:** M
 
@@ -869,11 +870,11 @@ Phase 7 SAML collection includes:
 **Description:** WebAuthn credential registration and assertion verification using `webauthn4j-core`.
 
 **Acceptance criteria:**
-- [ ] `POST /webauthn/register/begin` returns challenge + registration options
-- [ ] `POST /webauthn/register/complete` stores credential; `WebAuthnCredential` created
-- [ ] `POST /webauthn/authenticate/begin` returns assertion options
-- [ ] `POST /webauthn/authenticate/complete` verifies assertion; login proceeds
-- [ ] `sign_count` incremented on each authentication
+- [x] `POST /webauthn/register/begin` returns challenge + registration options
+- [x] `POST /webauthn/register/complete` stores credential; `WebAuthnCredential` created
+- [x] `POST /webauthn/authenticate/begin` returns assertion options
+- [x] `POST /webauthn/authenticate/complete` verifies assertion; login proceeds
+- [x] `sign_count` incremented on each authentication
 
 **Verification:** Register credential via browser → authenticate via browser → assertion verified.
 
@@ -882,21 +883,22 @@ Phase 7 SAML collection includes:
 **Files:**
 - `backend/mfa/src/main/java/.../controller/WebAuthnController.java`
 - `backend/mfa/src/main/java/.../service/WebAuthnService.java`
+- `backend/auth-core/src/main/resources/db/migration/V4__add_webauthn_credential.sql`
 
-**Estimated scope:** L (break down if needed)
+**Estimated scope:** L
 
 ---
 
 #### Task 26: Device Authorization Grant (RFC 8628)
 
-**Description:** Device flow: `POST /device_authorization` starts flow, `GET /device` shows user code approval page, `POST /token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code` polls for approval.
+**Description:** Device flow: `POST /device_authorization` starts flow, `GET /device` shows user code approval page, `POST /oauth2/token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code` polls for approval.
 
 **Acceptance criteria:**
-- [ ] `POST /device_authorization` returns `device_code` + `user_code` + `verification_uri`
-- [ ] `GET /device?user_code=X` shows approval page
-- [ ] Device code stored in Redis with 10-minute TTL
-- [ ] Polling `/token` returns `authorization_pending` until approved, then issues tokens
-- [ ] `slow_consumers` rate-limit on polling endpoint
+- [x] `POST /device_authorization` returns `device_code` + `user_code` + `verification_uri`
+- [x] `GET /device?user_code=X` shows approval page
+- [x] Device code stored in PostgreSQL with 10-minute TTL
+- [x] Polling `/oauth2/token` returns `authorization_pending` until approved, then issues tokens
+- [x] Expired device codes return `token_expired` error
 
 **Verification:** Device flow E2E — start flow → approve in browser → poll → tokens issued.
 
@@ -904,45 +906,24 @@ Phase 7 SAML collection includes:
 
 **Files:**
 - `backend/device-flow/src/main/java/.../controller/DeviceAuthorizationController.java`
-- `backend/device-flow/src/main/java/.../controller/DeviceApprovalController.java`
 - `backend/device-flow/src/main/java/.../service/DeviceFlowService.java`
+- `backend/oauth-oidc/src/main/java/.../controller/TokenController.java` (device_code grant)
+- `backend/auth-core/src/main/resources/db/migration/V5__add_device_code.sql`
 
 **Estimated scope:** M
 
 ---
 
-### Checkpoint: Phase 9
+### Checkpoint: Phase 8
 
-- [ ] TOTP enrollment + verification works (SC-13)
-- [ ] WebAuthn registration + authentication works (SC-11, SC-12)
-- [ ] Device flow completes end-to-end (SC-10)
-- [ ] Human reviews before Phase 10
-
----
-
-### Learning Site: Phase 9 Chapters
-
-**Location:** `frontend/app/docs/09-MFA-Device/`
-**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
-
-| Chapter | Source |
-|---------|--------|
-| `09-MFA-Device/00-Overview` | Phase 9 overview, MFA + device auth |
-| `09-MFA-Device/01-TOTP` | RFC 6238, TOTP algorithm, QR provisioning URI |
-| `09-MFA-Device/02-WebAuthn` | WebAuthn FIDO2, registration, assertion, signCount |
-| `09-MFA-Device/03-Device-Flow` | RFC 8628, device code, user code, polling |
+- [x] TOTP enrollment + verification works
+- [x] WebAuthn registration + authentication works
+- [x] Device flow completes end-to-end
+- [ ] Human reviews before Phase 9
 
 ---
 
-### Phase 9 Postman Collection
-
-**File:** `postman/iam-protocol-engine.json`
-
-Phase 9 MFA + Device Flow collection includes TOTP setup/verify, WebAuthn registration/authentication, and device flow sequences.
-
----
-
-### Phase 10: Demo Hardening
+### Phase 8: Demo Hardening
 
 ---
 

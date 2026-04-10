@@ -13,7 +13,32 @@
 
     <artifactId>device-flow</artifactId>
     <packaging>jar</packaging>
-
     <name>device-flow</name>
     <description>RFC 8628 Device Authorization Grant</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>auth-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>oauth-oidc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

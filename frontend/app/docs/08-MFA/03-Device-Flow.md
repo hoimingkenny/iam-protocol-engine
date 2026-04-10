@@ -1,0 +1,169 @@
+---
+title: Device Authorization Grant — RFC 8628
+sidebar_position: 4
+description: OAuth 2.0 Device Authorization Grant (RFC 8628) for browser-less and input-constrained devices like CLIs, smart TVs, and IoT.
+---
+
+# Device Authorization Grant — RFC 8628
+
+**RFC:** [8628](https://datatracker.ietf.org/doc/html/rfc8628)
+**Key files:** `backend/device-flow/src/main/java/com/iam/deviceflow/service/DeviceFlowService.java`
+
+---
+
+## The Problem This Solves
+
+Some devices cannot display a web page or have limited keyboard input:
+- Smart TVs, streaming sticks (Roku, Fire TV)
+- CLI tools on headless servers
+- IoT devices
+- Industrial equipment
+
+The user completes authentication on a separate device (phone/computer) while the device polls for the result.
+
+---
+
+## Protocol Flow (RFC 8628 §3)
+
+```
+Device (CLI/TV)              Authorization Server           User (phone/browser)
+     |                              |                              |
+     |-- POST /device_authorization ->|                              |
+     |   client_id=...               |                              |
+     |< - { device_code, user_code, -|                              |
+     |    verification_uri,          |                              |
+     |    interval, expires_in }     |                              |
+     |                              |                              |
+     | [display user_code + uri to user]                            |
+     |                              |                              |
+     |-- GET /device?user_code=XXXX --> [user visits URL on phone]  |
+     |   (returns HTML approval page) |                              |
+     |                              |                              |
+     |                              |< -- user approves on browser - |
+     |                              |                              |
+     |  [device polls /oauth2/token] |                              |
+     |-- POST /oauth2/token -------->|                              |
+     |   grant_type=device_code      |                              |
+     |   device_code=...             |                              |
+     |< - authorization_pending ----- |  (if not yet approved)     |
+     |  [wait interval seconds]       |                              |
+     |-- POST /oauth2/token -------->|                              |
+     |< - { access_token, ... } ----- |  (once user approves)       |
+```
+
+---
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/device_authorization` | `POST` | Device requests codes (RFC 8628 §3.1) |
+| `/device` | `GET` | User approval page (HTML) |
+| `/device/approve` | `POST` | User approves device |
+| `/oauth2/token` | `POST` | Device polls with `device_code` |
+
+---
+
+## Device Authorization Response (RFC 8628 §3.2)
+
+```json
+{
+  "device_code": "GmRhmhcxhwAzkoEqiMEy_DwE9xZ-Gq8KL0HJv5w0mVbI",
+  "user_code": "WDJB-MJHT",
+  "verification_uri": "https://auth.example.com/device",
+  "verification_uri_complete": "https://auth.example.com/device?user_code=WDJB-MJHT",
+  "expires_in": 600,
+  "interval": 5
+}
+```
+
+- **device_code:** 128-bit random string — device uses this to poll
+- **user_code:** 16-character user-friendly code — displayed on device, user types on phone
+- **verification_uri:** URL user visits on their phone to approve
+- **expires_in:** 600 seconds (10 minutes) — user must approve within this window
+- **interval:** 5 seconds — minimum polling interval (don't poll faster than this)
+
+---
+
+## Token Polling Response States
+
+When device polls `/oauth2/token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code`:
+
+| Status | HTTP | Response | Meaning |
+|--------|------|----------|---------|
+| `authorization_pending` | 400 | `authorization_pending` | User hasn't acted yet |
+| `slow_down` | 400 | `slow_down` | Polling too fast (interval was violated) |
+| `approved` | 200 | token response | User approved — issue tokens |
+| `access_denied` | 400 | `access_denied` | User explicitly denied |
+| `token_expired` | 400 | `token_expired` | 10-minute window elapsed |
+
+```java
+switch (dc.getStatus()) {
+    case approved -> {
+        TokenResponse response = tokenService.issueTokensForSamlUser(...);
+        deviceCodeRepo.deleteById(deviceCode);  // Consume on success
+        return ResponseEntity.ok(response);
+    }
+    case denied -> {
+        return ResponseEntity.badRequest()
+            .body(TokenResponse.error("access_denied", "user denied"));
+    }
+    case expired -> {
+        return ResponseEntity.badRequest()
+            .body(TokenResponse.error("token_expired", "device code expired"));
+    }
+    default -> {  // pending
+        dc.setPollingCount(dc.getPollingCount() + 1);
+        deviceCodeRepo.save(dc);
+        return ResponseEntity.badRequest()
+            .body(TokenResponse.error("authorization_pending", "waiting"));
+    }
+}
+```
+
+---
+
+## Device Code Lifecycle
+
+```
+created → [pending] → approved | denied | expired
+                         ↓
+                  [device polls and gets tokens]
+                  [device_code DELETED after successful token issuance]
+```
+
+- Device codes are single-use: deleted after successful token issuance
+- Expired codes are left in the table (status=expired) for audit
+- Denied codes are left in the table (status=denied) for audit
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE device_code (
+    device_code   VARCHAR(128) PRIMARY KEY,
+    user_code     VARCHAR(16) NOT NULL UNIQUE,
+    client_id     VARCHAR(128) NOT NULL,
+    scope         TEXT,
+    status        VARCHAR(32) NOT NULL DEFAULT 'pending',
+    expires_at    TIMESTAMPTZ NOT NULL,
+    approved_by   VARCHAR(256),
+    polling_count INT NOT NULL DEFAULT 0,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+- **status:** `pending`, `approved`, `denied`, `expired`
+- **polling_count:** incremented each poll — useful for detecting abuse / slow_down enforcement
+- **expires_at:** set to `NOW() + 10 minutes` at creation
+
+---
+
+## Security Notes
+
+- **Short lifetime (10 min)** — limits window for user code interception
+- **Polling throttling** — `slow_down` error if device polls faster than `interval`; interval doubles on repeated violations
+- **Consumption on use** — `device_code` deleted after token issuance prevents replay
+- **No client secret required** — device flow is designed for public clients (no client secret); `client_id` validation ensures only registered clients can initiate
+- **User code display** — 16-char code with dashes (`WDJB-MJHT`) is memorable but hard to guess (1 in 36^8 ~ 2.8 trillion)
