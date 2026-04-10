@@ -1,7 +1,7 @@
 # IAM Protocol Engine — Implementation Plan
 
 **Spec:** `SPEC.md`
-**Updated:** 2026-04-09
+**Updated:** 2026-04-10
 
 ---
 
@@ -680,7 +680,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 6
+### Checkpoint: Phase 6 ✅
 
 - [x] SC-08 from SPEC.md satisfied
 - [x] `./mvnw test -pl backend/scim` passes
@@ -763,19 +763,95 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
+#### Task 23: SCIM Joiner/Mover/Leaver → Token Revocation
+
+**Description:** SCIM lifecycle hooks that wire group membership changes to token operations. Joiner: issue refresh token on group join. Mover: revoke old access tokens on group change. Leaver: revoke all tokens on user delete or group removal.
+
+**Acceptance criteria:**
+- [ ] User added to group → optional new refresh token issued (opt-in via `?terminate Session` per SCIM)
+- [ ] User removed from group → existing access tokens for that group scope revoked
+- [ ] User deleted → all tokens for that user (`sub`) revoked
+- [ ] `POST /scim/v2/Users/{id}` (create) → audit event with joiner flag
+- [ ] `DELETE /scim/v2/Users/{id}` → all user tokens revoked, leaver audit event
+
+**Note:** These are Phase 7 scope because they cross SCIM + token infrastructure.
+
+**Verification:** Create user → delete user → confirm tokens revoked via `/introspect`. Add user to group → remove user → confirm group-scoped tokens revoked.
+
+**Dependencies:** Tasks 13, 18, 19
+
+**Files:**
+- `backend/scim/src/main/java/.../service/ScimUserService.java` (lifecycle hooks)
+- `backend/scim/src/main/java/.../service/ScimGroupService.java` (membership change hooks)
+- `backend/scim/src/main/java/.../service/TokenCleanupService.java`
+
+**Estimated scope:** S
+
+---
+
 ### Checkpoint: Phase 7
 
-- [ ] Full SAML SP-initiated SSO flow works end-to-end
+- [ ] Full SAML SP-initiated SSO flow works end-to-end (Tasks 20, 21, 22)
 - [ ] Tokens issued after SAML auth are validatable by demo-resource
+- [ ] Joiner/Mover/Leaver token revocation works end-to-end (Task 23)
+- [ ] `./mvnw test -pl backend/saml-federation` passes
+- [ ] Postman collection updated for Phase 7 SAML + JML
 - [ ] Human reviews before Phase 8
 
 ---
 
-### Phase 8: Modern Auth
+### Learning Site: Phase 7 Chapters
+
+**Location:** `frontend/app/docs/07-SAML/`
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+| Chapter | Source |
+|---------|--------|
+| `07-SAML/00-Overview` | Phase 7 overview, SP-initiated vs IdP-initiated SSO |
+| `07-SAML/01-SP-Metadata` | SAML 2.0 §2, EntityDescriptor, SPSSODescriptor, KeyDescriptor |
+| `07-SAML/02-AuthnRequest` | SAML 2.0 §3.4, AuthnRequest building, signing, redirect binding |
+| `07-SAML/03-ACS-Assertion` | SAML 2.0 §3.2, AssertionConsumerService, signature validation |
+| `07-SAML/04-SAML-OIDC-Bridge` | Claim mapping, NameID → sub, token issuance post-SAML |
+| `07-SAML/05-JML-Lifecycle` | Joiner/Mover/Leaver flows, SCIM → token revocation integration |
 
 ---
 
-#### Task 23: TOTP MFA
+### Phase 7 Postman Collection
+
+**File:** `postman/iam-protocol-engine.json`
+
+Phase 7 SAML collection includes:
+- `GET /saml/metadata` — SP metadata XML
+- `GET /saml/initiate` — AuthnRequest redirect builder
+- `POST /saml/acs` — Assertion consumer (simulated or Keycloak)
+- `POST /saml/bridge/token` — SAML → OIDC token issuance
+- Joiner/Mover/Leaver token revocation sequences (Tasks 22, 23)
+
+---
+
+### Phase 8: SAML 2.0 — Documentation + Postman
+
+*Phase 7 implementation complete. Phase 8 is the documentation and Postman integration pass for SAML 2.0 before moving to Modern Auth.*
+
+**Note:** This is not a re-implementation phase. All SAML code is in Phase 7. Phase 8 writes the learning site chapters and updates the Postman collection with SAML sequences (SP metadata, AuthnRequest redirect, ACS assertion validation, SAML→OIDC bridge, JML lifecycle).
+
+**Acceptance criteria:**
+- [ ] All Phase 7 code compiles and module tests pass
+- [ ] `frontend/app/docs/07-SAML/` chapters written and navigable
+- [ ] Postman collection includes SAML 2.0 sequences with variable substitution
+- [ ] `doc/10. Phase 7 Code Change Summary.md` written
+
+**Verification:** Learning site renders correctly; Postman collection passes schema validation.
+
+**Dependencies:** Phase 7 Tasks 20-23
+
+---
+
+### Phase 9: Modern Auth
+
+---
+
+#### Task 24: TOTP MFA
 
 **Description:** TOTP enrollment (`/mfa/totp/setup`) and verification (`/mfa/totp/verify`). Uses `dev.samstevens.totp`.
 
@@ -797,7 +873,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-#### Task 24: WebAuthn Registration + Authentication
+#### Task 25: WebAuthn Registration + Authentication
 
 **Description:** WebAuthn credential registration and assertion verification using `webauthn4j-core`.
 
@@ -820,7 +896,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-#### Task 25: Device Authorization Grant (RFC 8628)
+#### Task 26: Device Authorization Grant (RFC 8628)
 
 **Description:** Device flow: `POST /device_authorization` starts flow, `GET /device` shows user code approval page, `POST /token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code` polls for approval.
 
@@ -844,20 +920,42 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 8
+### Checkpoint: Phase 9
 
 - [ ] TOTP enrollment + verification works (SC-13)
 - [ ] WebAuthn registration + authentication works (SC-11, SC-12)
 - [ ] Device flow completes end-to-end (SC-10)
-- [ ] Human reviews before Phase 9
+- [ ] Human reviews before Phase 10
 
 ---
 
-### Phase 9: Demo Hardening
+### Learning Site: Phase 9 Chapters
+
+**Location:** `frontend/app/docs/09-MFA-Device/`
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+| Chapter | Source |
+|---------|--------|
+| `09-MFA-Device/00-Overview` | Phase 9 overview, MFA + device auth |
+| `09-MFA-Device/01-TOTP` | RFC 6238, TOTP algorithm, QR provisioning URI |
+| `09-MFA-Device/02-WebAuthn` | WebAuthn FIDO2, registration, assertion, signCount |
+| `09-MFA-Device/03-Device-Flow` | RFC 8628, device code, user code, polling |
 
 ---
 
-#### Task 26: End-to-End Demo Script
+### Phase 9 Postman Collection
+
+**File:** `postman/iam-protocol-engine.json`
+
+Phase 9 MFA + Device Flow collection includes TOTP setup/verify, WebAuthn registration/authentication, and device flow sequences.
+
+---
+
+### Phase 10: Demo Hardening
+
+---
+
+#### Task 27: End-to-End Demo Script
 
 **Description:** Bash script that runs through all major flows: OAuth, OIDC, SCIM, SAML, Device, MFA. Each step prints expected output.
 
@@ -869,7 +967,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 **Verification:** Script runs end-to-end on clean environment.
 
-**Dependencies:** Tasks 2-25
+**Dependencies:** Tasks 2-26
 
 **Files:**
 - `scripts/demo-e2e.sh`
@@ -878,7 +976,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-#### Task 27: Architecture README + Sequence Diagrams
+#### Task 28: Architecture README + Sequence Diagrams
 
 **Description:** `README.md` with architecture overview, tech stack, module responsibilities, and Mermaid sequence diagrams for each major flow.
 
@@ -890,7 +988,7 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 **Verification:** README renders correctly on GitHub (mermaid diagrams).
 
-**Dependencies:** Tasks 2-25
+**Dependencies:** Tasks 2-26
 
 **Files:**
 - `README.md`
@@ -899,12 +997,25 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 
 ---
 
-### Checkpoint: Phase 9
+### Checkpoint: Phase 10
 
 - [ ] Demo script runs clean
 - [ ] README is complete and accurate
 - [ ] SC-01 through SC-15 all satisfied (from SPEC.md)
 - [ ] Human final review — project complete
+
+---
+
+### Learning Site: Phase 10 Chapters
+
+**Location:** `frontend/app/docs/10-Demo-Hardening/`
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+| Chapter | Source |
+|---------|--------|
+| `10-Demo-Hardening/00-Overview` | Phase 10 overview, demo readiness |
+| `10-Demo-Hardening/01-Demo-Script` | `scripts/demo-e2e.sh` walkthrough |
+| `10-Demo-Hardening/02-Architecture` | README architecture, module map, sequence diagrams |
 
 ---
 
@@ -926,8 +1037,8 @@ Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, 
 |-------|--------------------------|
 | Tasks 6-9 (OAuth core) | Tasks 15-17 (Frontend scaffold) — no dependency between them |
 | Task 18 (SCIM Users) | Task 20 (SAML metadata) — no shared code |
-| Task 23 (TOTP) | Task 24 (WebAuthn) — separate endpoints, no shared state |
-| Task 25 (Device Flow) | Task 18 — `device-flow` module is isolated |
+| Task 24 (TOTP) | Task 25 (WebAuthn) — separate endpoints, no shared state |
+| Task 26 (Device Flow) | Task 18 — `device-flow` module is isolated |
 
 ---
 
