@@ -58,6 +58,13 @@ const sidebars: SidebarsConfig = {
     'SAML/SAML-OIDC-Bridge',
   ],
 
+  mfa: [
+    'MFA/Overview',
+    'MFA/TOTP',
+    'MFA/WebAuthn',
+    'MFA/Device-Flow',
+  ],
+
   reference: [
     'Reference/System-Architecture',
     'Reference/Learning-Notes',

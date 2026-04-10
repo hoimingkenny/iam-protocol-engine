@@ -1,7 +1,7 @@
 ---
 title: SCIM /Users CRUD
 sidebar_position: 2
-description: RFC 7644 §5.2 — User resource type: create, list, get, replace, delete.
+description: "RFC 7644 §5.2 — User resource type: create, list, get, replace, delete."
 ---
 
 # SCIM /Users — RFC 7644 §5.2

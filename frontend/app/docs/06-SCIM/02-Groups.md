@@ -1,7 +1,7 @@
 ---
 title: SCIM /Groups + Membership
 sidebar_position: 3
-description: RFC 7644 §5.3 — Group resource type: create, list, get, PATCH members, delete.
+description: "RFC 7644 §5.3 — Group resource type: create, list, get, PATCH members, delete."
 ---
 
 # SCIM /Groups — RFC 7644 §5.3
