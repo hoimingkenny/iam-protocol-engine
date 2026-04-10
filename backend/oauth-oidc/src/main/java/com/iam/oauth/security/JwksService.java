@@ -145,6 +145,20 @@ public class JwksService {
         return Collections.unmodifiableList(kidOrder);
     }
 
+    /**
+     * Exposes the keystore to saml-federation module for SP signing keys.
+     */
+    public KeyStore getKeystore() {
+        return keystore;
+    }
+
+    /**
+     * Exposes the keystore password to saml-federation module for SP signing.
+     */
+    public char[] getKeystorePassword() {
+        return keystorePassword;
+    }
+
     // --- private helpers ---
 
     private Map<String, Object> getKeyJwk(String kid) {

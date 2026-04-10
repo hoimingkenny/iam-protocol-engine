@@ -1,0 +1,88 @@
+---
+title: AuthnRequest
+description: How the SP builds and signs a SAML AuthnRequest for SP-initiated SSO.
+---
+
+# AuthnRequest — `/saml/initiate`
+
+## What Is an AuthnRequest?
+
+When a user wants to SSO into a SAML SP, the SP sends an `AuthnRequest` to the IdP asking the IdP to authenticate the user. It's essentially a signed message saying "please authenticate this user and send the assertion here."
+
+## Initiate Endpoint
+
+```
+GET /saml/initiate?client_id=test-client&redirect_uri=https://app.example.com/callback
+```
+
+The SP:
+1. Validates `client_id` and `redirect_uri` against the OAuth client registry
+2. Generates a signed `AuthnRequest` XML document
+3. Base64URL-encodes it as `SAMLRequest`
+4. Redirects to the IdP SSO URL with `SAMLRequest` and `RelayState` query parameters
+
+## The AuthnRequest XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:AuthnRequest
+    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+    ID="_abc123"
+    IssueInstant="2026-04-10T12:00:00Z"
+    Destination="https://idp.example.com/sso"
+    ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+    AssertionConsumerServiceURL="http://localhost:8080/saml/acs"
+    >
+    <saml:Issuer>http://localhost:8080/saml/sp</saml:Issuer>
+    <samlp:NameIDPolicy
+        Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+        AllowCreate="true"/>
+</samlp:AuthnRequest>
+```
+
+Key attributes:
+- **`ID`**: Unique identifier for this request. Stored in-memory with a 5-minute TTL for replay protection. When the IdP returns the assertion, it includes `InResponseTo="$ID"`.
+- **`IssueInstant`**: Timestamp. IdPs will reject requests that are too old.
+- **`Destination`**: The IdP's SSO URL. Configured via `saml.idp.sso-url`.
+- **`AssertionConsumerServiceURL`**: Where the IdP should POST the assertion back. Must exactly match the SP's ACS URL.
+- **`NameIDPolicy`**: Tells the IdP what format of NameID to return. `unspecified` is the most permissive.
+
+## How It's Signed
+
+The entire AuthnRequest XML is signed using **JSR 105 (JDK XML Digital Signature)** with RSA-SHA256:
+
+```java
+// SamlAuthnRequestService.java
+XMLSignature signature = XMLSignatureFactory.getInstance("DOM")
+    .newXMLSignature(signedInfo, keyInfo);
+
+// Sign using SP private key from keystore
+signature.sign(new DOMSignContext(spPrivateKey, document.getDocumentElement()));
+```
+
+The signature is embedded as a `<ds:Signature>` element inside the AuthnRequest.
+
+## Replay Protection
+
+After generating the AuthnRequest, the SP stores the request ID:
+
+```java
+// In-memory store with 5-minute TTL
+Map<String, Instant> pendingRequests = new ConcurrentHashMap<>();
+pendingRequests.put(requestId, Instant.now());
+```
+
+When the IdP returns the SAMLResponse with `InResponseTo="$ID"`, the SP checks that `$ID` exists in `pendingRequests` and has not expired. This prevents attackers from replaying old assertions.
+
+## Redirect to IdP
+
+The signed AuthnRequest XML is Base64URL-encoded and appended to the IdP SSO URL:
+
+```
+https://idp.example.com/sso?
+  SAMLRequest=Base64URL(SignedAuthnRequestXML)&
+  RelayState=Base64URL({"client_id":"test-client","redirect_uri":"https://app.example.com/callback"})
+```
+
+The `RelayState` is a JSON object containing the OAuth `client_id` and `redirect_uri`, which the SP needs later to complete the OIDC token issuance. It's Base64URL-encoded to survive the redirect.

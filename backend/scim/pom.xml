@@ -23,6 +23,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- oauth-oidc for TokenService (JML lifecycle token revocation) -->
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>oauth-oidc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

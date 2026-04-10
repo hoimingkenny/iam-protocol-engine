@@ -148,6 +148,64 @@ public class TokenService {
         );
     }
 
+    /**
+     * Issues tokens for a SAML-authenticated user.
+     * Called by the SAML → OIDC bridge after successful assertion validation.
+     *
+     * @param subject the SAML NameID (used as the OAuth subject / sub claim)
+     * @param clientId the OAuth client ID (from RelayState)
+     * @param nonce optional nonce for ID token (may be null)
+     * @param scope requested scopes (uses client default scopes if null/blank)
+     * @return TokenResponse with access_token, refresh_token, id_token
+     */
+    public TokenResponse issueTokensForSamlUser(String subject, String clientId,
+                                                 String nonce, String scope) {
+        // Validate client exists
+        Optional<OAuthClient> optClient = clientRepo.findByClientId(clientId);
+        if (optClient.isEmpty()) {
+            return TokenResponse.error("invalid_client", "client not found");
+        }
+        OAuthClient client = optClient.get();
+
+        // Resolve scope
+        String resolvedScope = resolveScope(scope, client.getAllowedScopes());
+
+        // Issue tokens
+        String familyId = generateId();
+        Token accessToken = createAccessToken(clientId, subject, resolvedScope, familyId);
+        Token refreshToken = createRefreshToken(clientId, subject, resolvedScope, familyId);
+
+        tokenRepo.save(accessToken);
+        tokenRepo.save(refreshToken);
+
+        // Issue ID token
+        String idToken = idTokenGenerator.generateIdToken(subject, clientId, nonce);
+
+        return new TokenResponse(
+            accessToken.getJti(),
+            "Bearer",
+            ACCESS_TOKEN_TTL_SECONDS,
+            refreshToken.getJti(),
+            idToken,
+            resolvedScope,
+            null,
+            null
+        );
+    }
+
+    /**
+     * Revokes all tokens for a given subject.
+     * Used by SCIM JML lifecycle: when a user is deleted (leaver flow),
+     * all their active tokens are revoked immediately.
+     *
+     * @param subject the OAuth subject (sub claim)
+     * @return number of tokens revoked
+     */
+    public int revokeAllTokensForUser(String subject) {
+        int revoked = tokenRepo.revokeAllBySubject(subject);
+        return revoked;
+    }
+
     // --- Refresh Token Grant (RFC 6749 §6) ---
 
     private TokenResponse handleRefreshTokenGrant(TokenRequest request) {

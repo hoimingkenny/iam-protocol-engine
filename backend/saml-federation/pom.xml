@@ -16,4 +16,58 @@
 
     <name>saml-federation</name>
     <description>SAML 2.0 SP + SAML→OIDC bridge</description>
+
+    <dependencies>
+        <!-- auth-core for entities and repositories -->
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>auth-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- oauth-oidc for JwksService (keystore access) -->
+        <dependency>
+            <groupId>com.iam</groupId>
+            <artifactId>oauth-oidc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Apache Santuario for exclusive canonical XML (C14N) support -->
+        <dependency>
+            <groupId>org.apache.santuario</groupId>
+            <artifactId>xmlsec</artifactId>
+            <version>4.0.4</version>
+        </dependency>
+
+        <!-- OpenSAML 4.0.0 for SAML XML processing -->
+        <dependency>
+            <groupId>org.opensaml</groupId>
+            <artifactId>opensaml-core</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opensaml</groupId>
+            <artifactId>opensaml-saml-api</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opensaml</groupId>
+            <artifactId>opensaml-saml-impl</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <!-- Spring -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 </project>

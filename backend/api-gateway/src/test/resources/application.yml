@@ -27,6 +27,15 @@ spring:
 server:
   port: 0
 
+saml:
+  sp:
+    entity-id: http://localhost:8080/saml/sp
+    acs-url: http://localhost:8080/saml/acs
+    base-url: http://localhost:8080
+  idp:
+    sso-url: https://keycloak.local:8443/realms/iam/protocol/saml
+    signing-cert: |
+
 management:
   endpoints:
     web:

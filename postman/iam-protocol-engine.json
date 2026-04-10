@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "IAM Protocol Engine",
-    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4), Admin UI (Phase 5), SCIM 2.0 (Phase 6). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo, Admin UI (React+Vite+MUI), SCIM 2.0 Users and Groups CRUD (RFC 7643/7644).",
+    "description": "OAuth 2.0 (Phase 2), OIDC (Phase 3), Token Lifecycle (Phase 4), Admin UI (Phase 5), SCIM 2.0 (Phase 6), SAML 2.0 SP (Phase 7). Auth Code+PKCE, Client Credentials, Refresh Rotation with family binding, Token Introspection (RFC 7662), Token Revocation (RFC 7009), OIDC Discovery (RFC 8414), JWKS (RFC 7517), ID Token (RS256), /userinfo, Admin UI (React+Vite+MUI), SCIM 2.0 Users and Groups CRUD (RFC 7643/7644), SAML 2.0 SP-initiated SSO, SAML→OIDC Bridge, JML Lifecycle (Joiner/Mover/Leaver) with token revocation.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -396,6 +396,17 @@
           }
         },
         {
+          "name": "JML — Leaver Flow (Delete User + Token Revocation)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/scim/v2/Users/{{user_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "description": "Phase 7 (JML Leaver) — Deletes SCIM user AND revokes all their active tokens via TokenService.revokeAllTokensForUser(subject). Check server logs for 'JML [leaver] user deleted: userName=X, tokens_revoked=N'."
+          }
+        },
+        {
           "name": "Create Group",
           "request": {
             "method": "POST",
@@ -621,14 +632,14 @@
       ]
     },
     {
-      "name": "Phase 4 — SAML 2.0 (planned)",
+      "name": "Phase 7 — SAML 2.0",
       "item": [
         {
           "name": "SP Metadata",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/saml/metadata",
-            "description": "Phase 4 — SAML SP metadata XML (signed). Register this with your IdP."
+            "description": "Phase 7 (RFC 7523) — SAML SP metadata XML (RSA-SHA256 signed). Register this with your IdP."
           }
         },
         {
@@ -644,7 +655,7 @@
                 { "key": "redirect_uri", "value": "{{redirect_uri}}" }
               ]
             },
-            "description": "Phase 4 — SAML SP-initiated SSO. Redirects to IdP with signed AuthnRequest."
+            "description": "Phase 7 (SAML 2.0 SP-initiated) — Builds signed AuthnRequest, encodes as SAMLRequest, redirects to IdP SSO URL. Request ID stored for replay protection (5-min TTL)."
           }
         },
         {
@@ -662,7 +673,7 @@
                 { "key": "RelayState", "value": "optional-state" }
               ]
             },
-            "description": "Phase 4 — Receives SAMLResponse from IdP. Validates signature, audience, conditions, in-response-to. Maps claims to OIDC tokens."
+            "description": "Phase 7 (SAML 2.0 ACS) — Receives SAMLResponse via HTTP-POST. Validates: XML signature (RSA-SHA256 with IdP cert), InResponseTo replay protection, Destination, NotBefore/NotOnOrAfter, AudienceRestriction. Maps SAML NameID to OAuth sub; issues access_token + refresh_token + id_token. Redirects to redirect_uri with tokens as query params."
           }
         }
       ]
