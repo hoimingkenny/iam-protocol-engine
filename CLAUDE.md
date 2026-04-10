@@ -84,8 +84,32 @@ Current branch: `phase-5`. Phase 1–4 complete (Bootstrap, OAuth 2.0 Core, OIDC
 
 ## Git Workflow
 
-### Branches
-Feature branches named `phase-N` accumulate all commits for that phase. `phase-2` is the main integration branch. Phase branches build on each other: `phase-3` → `phase-2` → `phase-4` → `phase-3` etc.
+### Branch Strategy
+
+Each phase has its own integration branch (`phase-N-develop`) that accumulates completed task branches. When all tasks are done, the phase develop branch is merged into the previous phase branch.
+
+```
+phase-6  (previous phase — integration target)
+  └── phase-7-develop  (Phase 7 integration branch)
+        ├── phase7-task20-saml-metadata
+        ├── phase7-task21-saml-acs
+        └── phase7-task22-saml-oidc-bridge
+```
+
+### Branch Naming
+
+- `phase-N-develop` — phase integration branch; always rebases cleanly on the previous phase
+- `phaseN-taskXX-description` — individual task branch; short-lived, merged when done
+- `phase-N` — historical phases used a flat branch-per-phase model; do not use this pattern for new phases
+
+### Typical Phase Sequence
+1. `git checkout -b phase-N-develop` from the previous phase branch (e.g., `phase-6`)
+2. For each task: `git checkout -b phaseN-taskXX-description` from `phase-N-develop`
+3. Implement, test, commit on the task branch
+4. Merge task branch into `phase-N-develop` (fast-forward or squash — prefer squash for clean history)
+5. Repeat for all tasks
+6. When all tasks done: merge `phase-N-develop` into `phase-(N-1)` and tag/delete the develop branch
+7. Update `IMPLEMENTATION_PLAN.md` checkpoint to mark phase complete
 
 ### Commits
 Format:
@@ -98,13 +122,6 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 ```
 
 Types: `Phase N Task X: <description>`, `docs:`, `fix:`, `Sync IMPLEMENTATION_PLAN.md:`
-
-### Typical Phase Sequence
-1. `git checkout -b phase-N` from previous phase branch
-2. Implement tasks as commits
-3. Add documentation: `doc/` files (testing guide, code change summaries), learning site docs in `frontend/app/docs/`
-4. Update `IMPLEMENTATION_PLAN.md` checkpoint to mark phase complete
-5. Push and PR to previous phase branch when ready
 
 ### Doc Files
 - `doc/06. Phase 2 Code Change Summary.md` — per-phase code change summaries
