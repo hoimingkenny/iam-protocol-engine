@@ -84,6 +84,36 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
+          sidebarId: 'adminUi',
+          position: 'left',
+          label: 'Admin UI',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'scim',
+          position: 'left',
+          label: 'SCIM 2.0',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'saml',
+          position: 'left',
+          label: 'SAML 2.0',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'mfa',
+          position: 'left',
+          label: 'MFA',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'demoHardening',
+          position: 'left',
+          label: 'Demo Hardening',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'reference',
           position: 'left',
           label: 'Reference',
