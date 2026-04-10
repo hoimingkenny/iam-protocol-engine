@@ -80,35 +80,36 @@ These are enforced across the codebase — do not weaken them:
 
 ## Current Implementation State
 
-Current branch: `phase-5`. Phase 1–4 complete (Bootstrap, OAuth 2.0 Core, OIDC Layer, Token Lifecycle). Phase 5 (Admin UI) in progress. See `IMPLEMENTATION_PLAN.md` for full task status.
+Current branch: `main`. Phase 1–7 complete (Bootstrap, OAuth 2.0 Core, OIDC Layer, Token Lifecycle, Admin UI, SCIM 2.0, SAML 2.0 SP). Phase 8 (Modern Auth: TOTP + WebAuthn + Device Flow) is next. See `IMPLEMENTATION_PLAN.md` for full task status.
 
 ## Git Workflow
 
 ### Branch Strategy
 
-Each phase has its own integration branch (`phase-N-develop`) that accumulates completed task branches. When all tasks are done, the phase develop branch is merged into the previous phase branch.
+Each phase has its own integration branch (`phase-N-develop`) branched from `main`. Task branches are created from `phase-N-develop` and merged back when done. When all tasks complete, `phase-N-develop` is merged into `main`.
 
 ```
-phase-6  (previous phase — integration target)
-  └── phase-7-develop  (Phase 7 integration branch)
-        ├── phase7-task20-saml-metadata
-        ├── phase7-task21-saml-acs
-        └── phase7-task22-saml-oidc-bridge
+main
+  └── phase-7-develop  (branched from main when Phase 7 begins)
+        ├── phase-7-task-20-saml-metadata
+        ├── phase-7-task-21-acs
+        ├── phase-7-task-22-saml-oidc-bridge
+        └── phase-7-task-23-jml-lifecycle
 ```
 
 ### Branch Naming
 
-- `phase-N-develop` — phase integration branch; always rebases cleanly on the previous phase
-- `phaseN-taskXX-description` — individual task branch; short-lived, merged when done
-- `phase-N` — historical phases used a flat branch-per-phase model; do not use this pattern for new phases
+- `phase-N-develop` — phase integration branch; branched from `main` at start of each phase
+- `phase-N-task-XX-description` — individual task branch; branched from `phase-N-develop`; merged (squash or fast-forward) when done
+- `phase-N` — historical phases used a flat branch-per-phase model; do not use this pattern
 
 ### Typical Phase Sequence
-1. `git checkout -b phase-N-develop` from the previous phase branch (e.g., `phase-6`)
-2. For each task: `git checkout -b phaseN-taskXX-description` from `phase-N-develop`
+1. `git checkout -b phase-N-develop` from `main`
+2. For each task: `git checkout -b phase-N-task-XX-description` from `phase-N-develop`
 3. Implement, test, commit on the task branch
-4. Merge task branch into `phase-N-develop` (fast-forward or squash — prefer squash for clean history)
+4. Merge task branch into `phase-N-develop` (squash or fast-forward — prefer squash for clean history)
 5. Repeat for all tasks
-6. When all tasks done: merge `phase-N-develop` into `phase-(N-1)` and tag/delete the develop branch
+6. When all tasks done: merge `phase-N-develop` into `main`
 7. Update `IMPLEMENTATION_PLAN.md` checkpoint to mark phase complete
 
 ### Commits
@@ -124,10 +125,12 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 Types: `Phase N Task X: <description>`, `docs:`, `fix:`, `Sync IMPLEMENTATION_PLAN.md:`
 
 ### Doc Files
-- `doc/06. Phase 2 Code Change Summary.md` — per-phase code change summaries
+- `doc/05. Testing Guide.md` — Postman-based API testing across all phases
+- `doc/06. Phase 2 Code Change Summary.md`
 - `doc/07. Phase 3 Code Change Summary.md`
 - `doc/08. Phase 4 Code Change Summary.md`
-- `doc/05. Testing Guide.md` — Postman-based API testing across all phases
+- `doc/09. Phase 6 Code Change Summary.md`
+- `doc/10. Phase 7 Code Change Summary.md`
 - Learning site: `frontend/app/docs/` (Docusaurus, sidebar driven)
 
 ## Boundaries
