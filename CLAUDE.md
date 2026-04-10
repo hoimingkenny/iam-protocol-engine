@@ -80,7 +80,7 @@ These are enforced across the codebase — do not weaken them:
 
 ## Current Implementation State
 
-Current branch: `main`. Phase 1–7 complete (Bootstrap, OAuth 2.0 Core, OIDC Layer, Token Lifecycle, Admin UI, SCIM 2.0, SAML 2.0 SP). Phase 8 (Modern Auth: TOTP + WebAuthn + Device Flow) is next. See `IMPLEMENTATION_PLAN.md` for full task status.
+Current branch: `main`. Phase 1–8 complete (Bootstrap, OAuth 2.0 Core, OIDC Layer, Token Lifecycle, Admin UI, SCIM 2.0, SAML 2.0 SP, Modern Auth: TOTP + WebAuthn + Device Flow). Phase 9 (Demo Hardening) is next. See `IMPLEMENTATION_PLAN.md` for full task status.
 
 ## Git Workflow
 
@@ -90,11 +90,10 @@ Each phase has its own integration branch (`phase-N-develop`) branched from `mai
 
 ```
 main
-  └── phase-7-develop  (branched from main when Phase 7 begins)
-        ├── phase-7-task-20-saml-metadata
-        ├── phase-7-task-21-acs
-        ├── phase-7-task-22-saml-oidc-bridge
-        └── phase-7-task-23-jml-lifecycle
+  └── phase-8-develop  (branched from main when Phase 8 began)
+        ├── phase-8-task-24-totp-mfa
+        ├── phase-8-task-25-webauthn
+        └── phase-8-task-26-device-flow
 ```
 
 ### Branch Naming
@@ -131,6 +130,7 @@ Types: `Phase N Task X: <description>`, `docs:`, `fix:`, `Sync IMPLEMENTATION_PL
 - `doc/08. Phase 4 Code Change Summary.md`
 - `doc/09. Phase 6 Code Change Summary.md`
 - `doc/10. Phase 7 Code Change Summary.md`
+- `doc/11. Phase 8 Code Change Summary.md`
 - Learning site: `frontend/app/docs/` (Docusaurus, sidebar driven)
 
 ## Boundaries
