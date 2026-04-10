@@ -1,10 +1,13 @@
 package com.iam.scim.service;
 
 import com.iam.authcore.entity.ScimUser;
+import com.iam.oauth.service.TokenService;
 import com.iam.scim.dto.ScimError;
 import com.iam.scim.dto.ScimListResponse;
 import com.iam.scim.dto.ScimUserDto;
 import com.iam.scim.repository.ScimUserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,17 +20,24 @@ import java.util.*;
  * SCIM 2.0 User management per RFC 7644 §5.2.
  *
  * Supports: POST, GET, PUT, DELETE on /scim/v2/Users
+ *
+ * JML Lifecycle hooks (Task 23):
+ * - Joiner (create): audit event with joiner flag
+ * - Leaver (delete): all tokens for user revoked immediately
  */
 @Service
 public class ScimUserService {
 
+    private static final Logger log = LoggerFactory.getLogger(ScimUserService.class);
     private static final String CONTENT_TYPE = "application/scim+json";
     private static final String BASE_LOCATION = "http://localhost:8080/scim/v2/Users";
 
     private final ScimUserRepository userRepo;
+    private final TokenService tokenService;
 
-    public ScimUserService(ScimUserRepository userRepo) {
+    public ScimUserService(ScimUserRepository userRepo, TokenService tokenService) {
         this.userRepo = userRepo;
+        this.tokenService = tokenService;
     }
 
     public String getContentType() { return CONTENT_TYPE; }
@@ -58,6 +68,9 @@ public class ScimUserService {
 
         ScimUser saved = userRepo.save(user);
         String location = BASE_LOCATION + "/" + saved.getId();
+
+        // JML Joiner lifecycle hook: fire-and-forget joiner audit event
+        log.info("JML [joiner] user created: userName={}", saved.getUserName());
 
         return new CreateResult(saved, location, 201);
     }
@@ -136,9 +149,17 @@ public class ScimUserService {
      */
     @Transactional
     public Object deleteUser(UUID id) {
-        if (!userRepo.existsById(id)) {
+        Optional<ScimUser> opt = userRepo.findById(id);
+        if (opt.isEmpty()) {
             return ScimError.notFound("User not found: " + id);
         }
+        ScimUser user = opt.get();
+
+        // JML Leaver lifecycle hook: revoke all tokens before deletion
+        String subject = user.getUserName();
+        int revoked = tokenService.revokeAllTokensForUser(subject);
+        log.info("JML [leaver] user deleted: userName={}, tokens_revoked={}", subject, revoked);
+
         userRepo.deleteById(id);
         return null; // 204 No Content
     }

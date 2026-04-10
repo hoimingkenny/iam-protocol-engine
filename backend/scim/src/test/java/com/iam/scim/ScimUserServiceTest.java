@@ -1,6 +1,7 @@
 package com.iam.scim;
 
 import com.iam.authcore.entity.ScimUser;
+import com.iam.oauth.service.TokenService;
 import com.iam.scim.dto.ScimError;
 import com.iam.scim.dto.ScimUserDto;
 import com.iam.scim.repository.ScimUserRepository;
@@ -20,12 +21,14 @@ import static org.mockito.Mockito.*;
 class ScimUserServiceTest {
 
     private ScimUserRepository userRepo;
+    private TokenService tokenService;
     private ScimUserService service;
 
     @BeforeEach
     void setUp() {
         userRepo = mock(ScimUserRepository.class);
-        service = new ScimUserService(userRepo);
+        tokenService = mock(TokenService.class);
+        service = new ScimUserService(userRepo, tokenService);
     }
 
     private ScimUser persistedUser(String userName) {
@@ -101,7 +104,7 @@ class ScimUserServiceTest {
 
     @Test
     void deleteUser_notFound_returnsError() {
-        when(userRepo.existsById(any())).thenReturn(false);
+        when(userRepo.findById(any())).thenReturn(Optional.empty());
         Object result = service.deleteUser(UUID.randomUUID());
         assertTrue(result instanceof ScimError);
         assertEquals(404, ((ScimError) result).status());
@@ -110,9 +113,13 @@ class ScimUserServiceTest {
     @Test
     void deleteUser_found_deletes() {
         UUID id = UUID.randomUUID();
-        when(userRepo.existsById(id)).thenReturn(true);
+        ScimUser user = persistedUser("alice");
+        user.setId(id);
+        when(userRepo.findById(id)).thenReturn(Optional.of(user));
+        when(tokenService.revokeAllTokensForUser("alice")).thenReturn(2);
         Object result = service.deleteUser(id);
         assertNull(result);
+        verify(tokenService).revokeAllTokensForUser("alice");
         verify(userRepo).deleteById(id);
     }
 }

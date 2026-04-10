@@ -193,6 +193,19 @@ public class TokenService {
         );
     }
 
+    /**
+     * Revokes all tokens for a given subject.
+     * Used by SCIM JML lifecycle: when a user is deleted (leaver flow),
+     * all their active tokens are revoked immediately.
+     *
+     * @param subject the OAuth subject (sub claim)
+     * @return number of tokens revoked
+     */
+    public int revokeAllTokensForUser(String subject) {
+        int revoked = tokenRepo.revokeAllBySubject(subject);
+        return revoked;
+    }
+
     // --- Refresh Token Grant (RFC 6749 §6) ---
 
     private TokenResponse handleRefreshTokenGrant(TokenRequest request) {
