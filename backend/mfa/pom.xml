@@ -47,6 +47,13 @@
             <version>3.5.3</version>
         </dependency>
 
+        <!-- WebAuthn (W3C Web Authentication) -->
+        <dependency>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-core</artifactId>
+            <version>0.31.2.RELEASE</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
