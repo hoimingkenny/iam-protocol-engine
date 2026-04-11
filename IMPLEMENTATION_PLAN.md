@@ -1,7 +1,7 @@
 # IAM Protocol Engine — Implementation Plan
 
 **Spec:** `SPEC.md`
-**Updated:** 2026-04-10
+**Updated:** 2026-04-11
 
 ---
 
@@ -988,6 +988,343 @@ Phase 7 SAML collection includes:
 | `09-Demo-Hardening/00-Overview` | Phase 9 overview, demo readiness |
 | `09-Demo-Hardening/01-Demo-Script` | `scripts/demo-e2e.sh` walkthrough |
 | `09-Demo-Hardening/02-Architecture` | README architecture, module map, sequence diagrams |
+
+---
+
+### Phase 10: Learning Site Refresh (AgentWay-alike UX)
+
+**Goal:** Transform the learning site into a premium docs-based course platform inspired by AgentWay Learn's product shell, information architecture, lesson progression, and calm reading experience, while remaining original in branding, copy, and visual execution.
+
+**Reference brief:** `UI_UX.md`
+
+**Planning assumption:** Phase 10 is a redesign of the existing Docusaurus learning site in `frontend/app/`. A full migration to Next.js + Tailwind is out of scope unless explicitly approved as a separate architectural phase.
+
+**Execution branch:** `phase-10-develop`
+
+**Implementation approach:**
+- Preserve the current Docusaurus docs content and route structure wherever practical
+- Restyle the site through `src/theme/` overrides, reusable React components, and `src/css/custom.css`
+- Treat the sidebar, lesson shell, header, and TOC as a unified learning product shell rather than isolated page tweaks
+- Use CSS variables for tokens and keep the design system framework-agnostic even though Phase 10 stays on Docusaurus
+
+**Non-goals:**
+- Do not copy AgentWay branding, logo, illustrations, wording, or exact visual design
+- Do not turn the learning site into a marketing landing page
+- Do not replace documentation depth with decorative UI
+- Do not hide a frontend platform migration inside a visual refresh
+
+---
+
+#### Task 29: Information Architecture + Curriculum Navigation
+
+**Description:** Rework the learning site structure so it behaves like a guided curriculum platform with visible track progression, stable lesson IDs, clearer chapter sequencing, and a curriculum-first navigation model.
+
+**Acceptance criteria:**
+- [ ] Learning home page presents tracks as a curated curriculum, not a generic docs index
+- [ ] Information architecture supports 4 core screen types: learning home, track overview, lesson detail, and mobile drawer state
+- [ ] Left sidebar is reorganized into named tracks and chapters with stable lesson identifiers and status affordances
+- [ ] Lesson order is obvious without requiring users to infer sequence from URLs
+- [ ] Advanced or optional material is clearly separated into dedicated sections
+- [ ] Lesson pages expose clear progression with previous/next navigation and optional back-to-track links
+- [ ] Existing IAM protocol content remains reachable and logically grouped
+
+**Verification:** Manual walkthrough on desktop and mobile shows a coherent course-style navigation model across homepage, track page, and lesson page.
+
+**Dependencies:** Phase 9
+
+**Files:**
+- `frontend/app/docusaurus.config.ts`
+- `frontend/app/sidebars.ts`
+- `frontend/app/docs/**`
+- `frontend/app/src/pages/**`
+- `frontend/app/src/components/**`
+- `frontend/app/src/theme/**`
+
+**Estimated scope:** M
+
+---
+
+#### Task 30: Premium Visual System + Layout Shell
+
+**Description:** Implement the premium editorial visual system for the learning site: sticky top navbar, sticky syllabus sidebar, optional right-side TOC, light-first tokens, typography system, and reusable layout primitives.
+
+**Acceptance criteria:**
+- [ ] Layout follows a 3-part learning shell: sticky top navbar, sticky left syllabus sidebar, centered reading area, optional right TOC
+- [ ] Sticky global header is 64px tall and includes brand area, top-level navigation, search trigger, language switcher, and sign-in/account CTA
+- [ ] Sticky left syllabus sidebar sits below the header, is independently scrollable, and feels curated rather than file-tree-like
+- [ ] Optional right-side TOC is visible on large screens only and stays visually quiet
+- [ ] Light-first design tokens from `UI_UX.md` are implemented with CSS variables
+- [ ] Typography uses heading, body, and mono roles that produce a premium technical editorial reading experience
+- [ ] Spacing follows the defined 4/8/12/16/24/32/48/64 rhythm with subtle radius and thin borders
+- [ ] Visual design is original and production-ready, not a clone of AgentWay Learn
+
+**Verification:** `cd frontend/app && npm run build` succeeds; manual review confirms sticky regions do not overlap content and the site reads cleanly on desktop/tablet/mobile.
+
+**Dependencies:** Task 29
+
+**Files:**
+- `frontend/app/src/css/custom.css`
+- `frontend/app/src/theme/**`
+- `frontend/app/src/components/**`
+- `frontend/app/src/pages/**`
+- `frontend/app/static/**`
+
+**Estimated scope:** L
+
+---
+
+#### Task 31: Lesson Experience + Progress UX
+
+**Description:** Upgrade lesson pages into a course-quality reading experience with stronger metadata, info capsules, callouts, TOC support, guided lesson progression, and a non-blocking progress CTA.
+
+**Acceptance criteria:**
+- [ ] Lesson pages include a strong H1, one-sentence summary, metadata row, and compact info strip
+- [ ] Metadata row surfaces lesson ID, duration, and lesson type
+- [ ] Info strip supports fields such as SDK Focus, Prerequisites, and Related Exercise
+- [ ] Content styling supports paragraphs, tables, code blocks, diagrams, and subtle callouts in a documentation-first reading experience
+- [ ] Previous/next lesson cards show lesson ID and title and clearly reinforce guided progression
+- [ ] "Sign in to save progress" or equivalent panel is present, helpful, and non-blocking
+- [ ] Accessibility expectations met: keyboard navigation, visible focus states, reduced-motion support, and non-color-only status indicators
+
+**Verification:** Manual review of at least 3 representative lessons confirms readability, progression UX, and accessibility affordances.
+
+**Dependencies:** Tasks 29, 30
+
+**Files:**
+- `frontend/app/src/pages/**`
+- `frontend/app/src/components/**`
+- `frontend/app/src/css/custom.css`
+- `frontend/app/docs/**`
+
+**Estimated scope:** M
+
+---
+
+#### Task 32: Content Migration + Production Polish
+
+**Description:** Adapt current IAM learning content into the new layout, create track and overview surfaces where needed, and complete responsive, accessibility, and production-quality polish.
+
+**Acceptance criteria:**
+- [ ] Existing protocol chapters are mapped into track-based navigation without losing coverage
+- [ ] Home page and track overview page present the curriculum clearly for new visitors
+- [ ] Mobile course drawer works without horizontal scrolling and preserves orientation
+- [ ] Sidebar supports clear default, hover, active, completed, and locked or preview states
+- [ ] Badge system supports optional, exercise, and capstone states with restrained styling
+- [ ] Empty states and search-entry affordances feel intentional, not placeholder-level
+- [ ] QA is completed at 320px, 768px, 1024px, and 1440px widths
+- [ ] Final build is ready for GitHub Pages deployment
+
+**Verification:** `cd frontend/app && npm run build` succeeds and key pages render correctly in responsive browser checks.
+
+**Dependencies:** Tasks 29, 30, 31
+
+**Files:**
+- `frontend/app/src/pages/index.tsx`
+- `frontend/app/src/pages/**`
+- `frontend/app/docs/**`
+- `frontend/app/static/**`
+- `frontend/app/src/theme/**`
+
+**Estimated scope:** M
+
+---
+
+### Phase 10 Suggested Task Branches
+
+- `phase-10-task-29-ia-navigation`
+- `phase-10-task-30-learning-shell`
+- `phase-10-task-31-lesson-experience`
+- `phase-10-task-32-content-polish`
+
+---
+
+### Checkpoint: Phase 10
+
+- [ ] Learning site presents a calm, premium, course-like UX
+- [ ] Navigation model supports home, track overview, lesson detail, and mobile drawer states
+- [ ] Global header, syllabus sidebar, and lesson navigation all reinforce curriculum orientation
+- [ ] Existing IAM content is preserved and easier to navigate
+- [ ] Responsive and accessibility checks completed
+- [ ] Human design review before release
+
+---
+
+### Learning Site: Phase 10 Chapters
+
+**Location:** `frontend/app/`
+**Live at:** `https://hoimingkenny.github.io/iam-protocol-engine/`
+
+| Chapter | Source |
+|---------|--------|
+| `Learning Home` | `UI_UX.md`, curriculum structure, course platform framing |
+| `Track Overview` | Reworked sidebar taxonomy and track progression |
+| `Lesson Detail Experience` | Metadata bar, info capsules, TOC, previous/next flow |
+| `Design System` | Tokens, typography, spacing, sticky layout shell |
+| `Mobile Navigation` | Drawer behavior, responsive reading layout |
+| `Component System` | Header, sidebar, badges, progress CTA, lesson navigation, TOC |
+
+---
+
+### Phase 11: Fumadocs Interactive Learning Lab
+
+**Goal:** Add a second documentation experience powered by Next.js + Fumadocs for interactive authorization flow walkthroughs, while preserving the existing Docusaurus learning site as the canonical long-form curriculum.
+
+**Planning assumption:** Phase 11 introduces a new app in `frontend/fumadocs/` instead of migrating `frontend/app/`. Docusaurus remains live and maintained. The new Fumadocs site focuses on interactive protocol visualizations, guided demos, and API-backed learning surfaces that benefit from Next.js server capabilities.
+
+**Reference inputs:** Fumadocs official docs, existing IAM protocol content in `frontend/app/docs/`, backend modules under `backend/`
+
+**Execution branch:** `phase-11-develop`
+
+**Implementation approach:**
+- Keep `frontend/app/` as the current Docusaurus course site with no breaking route or content removal
+- Add `frontend/fumadocs/` as a separate Next.js app using Fumadocs for interactive learning and API documentation
+- Treat Spring Boot as the protocol engine and source of truth; Next.js is a presentation and orchestration layer only
+- Reuse existing Markdown and architecture knowledge where practical, but adapt content into interaction-first experiences instead of mirroring pages one-for-one
+- Prefer static generation for narrative docs and server routes only where interactivity, proxying, or secure demo glue is actually needed
+
+**Non-goals:**
+- Do not replace the Java backend with Next.js API logic
+- Do not silently migrate or deprecate the Docusaurus site during this phase
+- Do not create a second copy of every existing lesson without a distinct interactive purpose
+- Do not change token lifetimes, grant types, persistence design, or protocol security constraints as part of frontend work
+
+---
+
+#### Task 33: Fumadocs App Scaffold + Platform Decisions
+
+**Description:** Scaffold a dedicated Next.js + Fumadocs app in `frontend/fumadocs/`, define workspace conventions, and document how it coexists with the existing Docusaurus site.
+
+**Acceptance criteria:**
+- [ ] `frontend/fumadocs/` exists as an isolated Next.js + Fumadocs app
+- [ ] Node and package manager requirements are documented for the new app
+- [ ] Base routing is defined so the app can host docs and interactive flow pages without conflicting with Docusaurus
+- [ ] Shared repository conventions are documented: where content lives, how to run locally, and how to build
+- [ ] Coexistence strategy between `frontend/app/` and `frontend/fumadocs/` is written down clearly
+
+**Verification:** `cd frontend/fumadocs && npm install && npm run build` succeeds on a clean checkout.
+
+**Dependencies:** Phase 10
+
+**Files:**
+- `frontend/fumadocs/package.json`
+- `frontend/fumadocs/next.config.*`
+- `frontend/fumadocs/app/**`
+- `frontend/fumadocs/content/**`
+- `frontend/fumadocs/README.md`
+- `README.md`
+
+**Estimated scope:** M
+
+---
+
+#### Task 34: Interactive OAuth/OIDC Flow Lab
+
+**Description:** Build the first interactive learning lab in Fumadocs for OAuth 2.0 Authorization Code + PKCE and OIDC login, with step-by-step state visualization, request/response examples, and callback-aware demo pages.
+
+**Acceptance criteria:**
+- [ ] Interactive flow pages explain the major actors, requests, redirects, and token issuance steps
+- [ ] Users can walk through Authorization Code + PKCE from browser UI to callback result
+- [ ] OIDC additions such as discovery, ID token, and UserInfo are represented in the flow experience
+- [ ] UI exposes request parameters, returned payloads, and state transitions in a teaching-friendly way
+- [ ] Demo pages can safely read from configured backend endpoints without weakening protocol constraints
+- [ ] Callback and token display surfaces clearly distinguish demo UX from production guidance
+
+**Verification:** Local walkthrough completes authorize redirect, callback handling, and token/result inspection against the existing Spring backend.
+
+**Dependencies:** Task 33
+
+**Files:**
+- `frontend/fumadocs/app/**`
+- `frontend/fumadocs/components/**`
+- `frontend/fumadocs/lib/**`
+- `frontend/fumadocs/content/**`
+
+**Estimated scope:** L
+
+---
+
+#### Task 35: API Reference + OpenAPI Integration
+
+**Description:** Use Fumadocs OpenAPI support to create a richer API reference for selected IAM endpoints, with interactive request exploration and curated protocol explanations.
+
+**Acceptance criteria:**
+- [ ] At least one high-value API area is exposed through Fumadocs OpenAPI pages
+- [ ] API reference includes endpoint purpose, parameters, example payloads, and response semantics
+- [ ] Interactive API exploration is constrained to approved local/demo targets only
+- [ ] Generated API pages are integrated into the overall docs navigation rather than left as a disconnected sandbox
+- [ ] OpenAPI reference complements narrative lessons instead of replacing protocol explanations
+
+**Verification:** Fumadocs build succeeds and rendered API pages load correctly in the local app.
+
+**Dependencies:** Tasks 33, 34
+
+**Files:**
+- `frontend/fumadocs/lib/openapi.*`
+- `frontend/fumadocs/app/**`
+- `frontend/fumadocs/content/**`
+- `frontend/fumadocs/components/**`
+
+**Estimated scope:** M
+
+---
+
+#### Task 36: Dual-Site Navigation + Deployment Strategy
+
+**Description:** Finalize how Docusaurus and Fumadocs link to each other, document hosting strategy, and ensure contributors can develop and deploy both sites without confusion.
+
+**Acceptance criteria:**
+- [ ] Primary navigation makes the distinction between "Curriculum Docs" and "Interactive Lab" obvious
+- [ ] Both sites link to each other intentionally without route ambiguity
+- [ ] Deployment strategy is documented for local dev, preview, and production hosting
+- [ ] Contributor documentation explains when to add content to Docusaurus versus Fumadocs
+- [ ] The dual-site model feels deliberate, not transitional or duplicated
+
+**Verification:** Manual review confirms both sites build, link correctly, and present a coherent documentation strategy.
+
+**Dependencies:** Tasks 33, 34, 35
+
+**Files:**
+- `README.md`
+- `frontend/app/**`
+- `frontend/fumadocs/**`
+- `doc/**`
+
+**Estimated scope:** M
+
+---
+
+### Phase 11 Suggested Task Branches
+
+- `phase-11-task-33-fumadocs-scaffold`
+- `phase-11-task-34-interactive-flow-lab`
+- `phase-11-task-35-openapi-reference`
+- `phase-11-task-36-dual-site-deployment`
+
+---
+
+### Checkpoint: Phase 11
+
+- [ ] Docusaurus remains intact as the long-form curriculum site
+- [ ] A new Fumadocs app exists in `frontend/fumadocs/`
+- [ ] Interactive OAuth/OIDC flow learning experience works against the existing backend
+- [ ] API reference experience proves the value of Fumadocs beyond static content
+- [ ] Dual-site information architecture and deployment guidance are documented
+- [ ] Human architectural review confirms the two-site model is worth maintaining
+
+---
+
+### Learning Site: Phase 11 Surfaces
+
+**Location:** `frontend/fumadocs/`
+**Role:** Interactive lab and API explorer alongside the Docusaurus curriculum
+
+| Surface | Source |
+|---------|--------|
+| `Interactive Flow Home` | Phase 11 overview, flow-lab positioning |
+| `OAuth 2.0 PKCE Lab` | Existing Phase 2 docs and live backend behavior |
+| `OIDC Login Lab` | Existing Phase 3 docs and discovery/token payloads |
+| `API Reference` | OpenAPI-backed endpoint reference for selected flows |
+| `Dual-Site Navigation` | Cross-links between Docusaurus curriculum and Fumadocs lab |
 
 ---
 

@@ -7,7 +7,7 @@ description: What Phase 1 built — a complete bootstrap of the IAM Protocol Eng
 # Phase 1 — Bootstrap
 
 **Status:** Complete
-**Branch:** `phase1-task4-api-gateway`
+**Branch:** `phase-1-task-04-api-gateway`
 **Lines changed:** ~2,159 lines across 49 files
 
 Phase 1 built the foundation: a Maven multi-module project with 8 backend modules, Docker Compose for PostgreSQL + Redis, 10 JPA entities with Flyway migrations, and the Spring Boot API gateway entry point.

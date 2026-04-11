@@ -1,0 +1,380 @@
+.page {
+  display: grid;
+  gap: 48px;
+  padding: 24px 0 64px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 420px);
+  gap: 24px;
+  align-items: start;
+}
+
+.heroIntro {
+  display: grid;
+  gap: 24px;
+}
+
+.kicker,
+.sectionKicker,
+.trackLabel,
+.railLabel,
+.calloutPointLabel,
+.statLabel {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kicker,
+.sectionKicker,
+.railLabel,
+.calloutPointLabel {
+  color: var(--site-text-muted);
+}
+
+.title {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--site-text);
+  font-size: clamp(2.8rem, 5vw, 4.8rem);
+  line-height: 0.95;
+}
+
+.summary {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--site-text-muted);
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.primaryAction {
+  border: 1px solid var(--site-accent-strong);
+  border-radius: 999px;
+  background: var(--site-accent);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.18);
+}
+
+.primaryAction:hover,
+.primaryAction:focus-visible {
+  background: var(--site-accent-strong);
+  color: #fff;
+}
+
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  color: var(--site-text);
+  font-size: 0.96rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.secondaryAction:hover,
+.secondaryAction:focus-visible {
+  color: var(--site-accent);
+  text-decoration: none;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statCard,
+.railCard,
+.trackCard,
+.callout {
+  border: 1px solid var(--site-border);
+  border-radius: 14px;
+  background: var(--site-surface);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+}
+
+.statCard {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.statValue {
+  color: var(--site-text);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.heroRail {
+  position: sticky;
+  top: calc(var(--ifm-navbar-height) + 24px);
+  display: grid;
+  gap: 12px;
+}
+
+.railHeader,
+.trackMeta,
+.trackCardHeader,
+.trackLessonMeta,
+.lessonLead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.railLink,
+.trackTitle {
+  color: var(--site-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.railLink:hover,
+.railLink:focus-visible,
+.trackTitle:hover,
+.trackTitle:focus-visible {
+  color: var(--site-accent);
+  text-decoration: none;
+}
+
+.railCard {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.trackPreview {
+  display: grid;
+  gap: 12px;
+}
+
+.trackCount,
+.duration {
+  color: var(--site-text-muted);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.74rem;
+}
+
+.trackSummary {
+  margin: 0;
+  color: var(--site-text-muted);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.lessonStack,
+.trackLessons {
+  display: grid;
+  gap: 8px;
+}
+
+.lessonRow,
+.trackLessonRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--site-text);
+  text-decoration: none;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease;
+}
+
+.lessonRow:hover,
+.lessonRow:focus-visible,
+.trackLessonRow:hover,
+.trackLessonRow:focus-visible {
+  border-color: var(--site-border);
+  background: var(--site-surface-muted);
+  text-decoration: none;
+}
+
+.lessonId {
+  min-width: 2.6rem;
+  color: var(--site-text);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.lessonTitle {
+  min-width: 0;
+  color: inherit;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.statusDone,
+.statusPreview,
+.statusLive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+}
+
+.statusDone {
+  border: 1px solid rgba(5, 150, 105, 0.24);
+  color: var(--site-success);
+  background: rgba(5, 150, 105, 0.08);
+}
+
+.statusPreview {
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  color: var(--site-warning);
+  background: rgba(217, 119, 6, 0.08);
+}
+
+.statusLive {
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--site-accent);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.badge {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badgeOpt {
+  border-color: rgba(100, 116, 139, 0.18);
+  background: rgba(148, 163, 184, 0.12);
+  color: #334155;
+}
+
+.badgeEx {
+  border-color: rgba(37, 99, 235, 0.16);
+  background: var(--site-accent-soft);
+  color: var(--site-accent-strong);
+}
+
+.badgeCap {
+  border-color: rgba(217, 119, 6, 0.14);
+  background: rgba(217, 119, 6, 0.1);
+  color: #9a3412;
+}
+
+.section {
+  display: grid;
+  gap: 24px;
+}
+
+.sectionHeading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: 24px;
+  align-items: end;
+}
+
+.sectionHeading h2,
+.callout h2,
+.trackCard h3 {
+  margin: 0;
+  color: var(--site-text);
+}
+
+.sectionHeading p,
+.callout p {
+  margin: 0;
+  color: var(--site-text-muted);
+  line-height: 1.75;
+}
+
+.trackGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.trackCard {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.trackCountPill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--site-surface-muted);
+  color: var(--site-text-muted);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.74rem;
+}
+
+.callout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
+}
+
+.calloutPoints {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 996px) {
+  .page {
+    gap: 32px;
+    padding-top: 8px;
+  }
+
+  .hero,
+  .sectionHeading,
+  .callout {
+    grid-template-columns: 1fr;
+  }
+
+  .heroRail {
+    position: static;
+  }
+
+  .stats,
+  .trackGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .title {
+    max-width: none;
+    font-size: 2.6rem;
+  }
+
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaryAction {
+    width: 100%;
+    justify-content: center;
+  }
+}

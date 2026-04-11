@@ -32,6 +32,8 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/',
           showLastUpdateTime: true,
+          sidebarCollapsible: true,
+          sidebarCollapsed: false,
           editUrl: 'https://github.com/hoimingkenny/iam-protocol-engine/edit/main/frontend/app/',
         },
         blog: false,
@@ -45,78 +47,28 @@ const config: Config = {
   themeConfig: {
     image: 'img/docusaurus-social-card.jpg',
     colorMode: {
-      defaultMode: 'dark',
+      defaultMode: 'light',
+      disableSwitch: true,
       respectPrefersColorScheme: false,
     },
     navbar: {
-      title: 'IAM Protocol Engine',
-      style: 'dark',
+      title: 'IAM Learn',
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'introduction',
+          to: '/',
+          label: 'Home',
           position: 'left',
-          label: 'Introduction',
         },
         {
           type: 'docSidebar',
-          sidebarId: 'bootstrap',
+          sidebarId: 'curriculum',
           position: 'left',
-          label: 'Bootstrap',
+          label: 'Curriculum',
         },
         {
-          type: 'docSidebar',
-          sidebarId: 'oauth2',
-          position: 'left',
-          label: 'OAuth 2.0',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'oidc',
-          position: 'left',
-          label: 'OIDC',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'tokenLifecycle',
-          position: 'left',
-          label: 'Token Lifecycle',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'adminUi',
-          position: 'left',
-          label: 'Admin UI',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'scim',
-          position: 'left',
-          label: 'SCIM 2.0',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'saml',
-          position: 'left',
-          label: 'SAML 2.0',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'mfa',
-          position: 'left',
-          label: 'MFA',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'demoHardening',
-          position: 'left',
-          label: 'Demo Hardening',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'reference',
-          position: 'left',
+          to: '/Reference/System-Architecture',
           label: 'Reference',
+          position: 'left',
         },
         {
           href: 'https://github.com/hoimingkenny/iam-protocol-engine',
@@ -132,6 +84,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+      additionalLanguages: ['java', 'sql', 'powershell', 'yaml', 'json', 'bash'],
     },
   } satisfies Preset.ThemeConfig,
 };
