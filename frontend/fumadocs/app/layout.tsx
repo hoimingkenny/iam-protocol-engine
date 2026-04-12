@@ -17,8 +17,8 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "IAM Docs Studio",
-    template: "%s | IAM Docs Studio",
+    default: "Documentation",
+    template: "%s | Documentation",
   },
   description:
     "Interactive OAuth and OIDC study workspace built with Fumadocs, Next.js, and the IAM Protocol Engine backend.",
