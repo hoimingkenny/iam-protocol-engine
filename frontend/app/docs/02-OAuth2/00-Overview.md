@@ -4,6 +4,8 @@ sidebar_position: 1
 description: What Phase 2 built and how the pieces fit together.
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 # Phase 2 — OAuth 2.0 Core
 
 ## What Was Built
@@ -14,8 +16,8 @@ Phase 2 implements the core OAuth 2.0 flows from scratch — no Spring Authoriza
 
 | Module | What Changed |
 |--------|--------------|
-| `oauth-oidc` | New: `AuthorizeService`, `TokenService`, `AuthorizeController`, `TokenController`, PKCE utilities, DTOs |
-| `demo-resource` | New: `BearerTokenAuthenticationFilter`, `TokenValidationService`, `ResourceController`, `ResourceSecurityConfig` |
+| oauth-oidc | New: `AuthorizeService`, `TokenService`, `AuthorizeController`, `TokenController`, PKCE utilities, DTOs |
+| demo-resource | New: `BearerTokenAuthenticationFilter`, `TokenValidationService`, `ResourceController`, `ResourceSecurityConfig` |
 
 ## Flows Implemented
 
@@ -34,6 +36,19 @@ POST /oauth2/token      → validates old refresh → rotates both tokens
 GET  /api/resource      → validates Bearer token → returns user identity
 GET  /api/health        → public, no auth required
 ```
+
+## OAuth 2.0 Authorization Code + PKCE Flow
+
+<div className="diagram-card">
+  <a href={useBaseUrl('/img/oauth2-pkce-flow.svg')} target="_blank" rel="noreferrer">
+    <img
+      src={useBaseUrl('/img/oauth2-pkce-flow.svg')}
+      alt="OAuth 2.0 Authorization Code plus PKCE flow"
+      style={{width: '100%', height: 'auto', display: 'block'}}
+    />
+  </a>
+
+</div>
 
 ## Key Design Decisions
 

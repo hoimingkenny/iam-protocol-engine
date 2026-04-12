@@ -125,13 +125,13 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 Types: `Phase N Task X: <description>`, `docs:`, `fix:`, `Sync IMPLEMENTATION_PLAN.md:`
 
 ### Doc Files
-- `doc/05. Testing Guide.md` — Postman-based API testing across all phases
-- `doc/06. Phase 2 Code Change Summary.md`
-- `doc/07. Phase 3 Code Change Summary.md`
-- `doc/08. Phase 4 Code Change Summary.md`
-- `doc/09. Phase 6 Code Change Summary.md`
-- `doc/10. Phase 7 Code Change Summary.md`
-- `doc/11. Phase 8 Code Change Summary.md`
+- `doc/testing/01_TESTING-GUIDE.md` — Postman-based API testing across all phases
+- `doc/codechange/02_P2-CODE-CHANGE-SUMMARY.md`
+- `doc/codechange/03_P3-CODE-CHANGE-SUMMARY.md`
+- `doc/codechange/04_P4-CODE-CHANGE-SUMMARY.md`
+- `doc/codechange/05_P6-CODE-CHANGE-SUMMARY.md`
+- `doc/codechange/06_P7-CODE-CHANGE-SUMMARY.md`
+- `doc/codechange/07_P8-CODE-CHANGE-SUMMARY.md`
 - Learning site: `frontend/app/docs/` (Docusaurus, sidebar driven)
 - `scripts/demo-e2e.sh` — End-to-end demo script (all protocols)
 - Learning site: `frontend/app/docs/` (Docusaurus, sidebar driven)

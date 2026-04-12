@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+:root {
+  --app-bg: #f8fafc;
+  --app-surface: rgba(255, 255, 255, 0.88);
+  --app-surface-strong: #ffffff;
+  --app-surface-muted: #eef3f8;
+  --app-border: rgba(15, 23, 42, 0.09);
+  --app-border-strong: rgba(15, 23, 42, 0.14);
+  --app-text: #0f172a;
+  --app-text-muted: #526072;
+  --app-accent: #2563eb;
+  --app-accent-strong: #1d4ed8;
+  --app-accent-soft: rgba(37, 99, 235, 0.1);
+  --app-code-bg: #f1f5f9;
+  --fd-layout-width: 1520px;
+  --fd-sidebar-width: 280px;
+  --fd-toc-width: 248px;
+  --fd-header-height: 64px;
+}
+
+.dark {
+  --app-bg: #09111d;
+  --app-surface: rgba(12, 23, 38, 0.84);
+  --app-surface-strong: #0f1b2d;
+  --app-surface-muted: #142235;
+  --app-border: rgba(148, 163, 184, 0.16);
+  --app-border-strong: rgba(148, 163, 184, 0.22);
+  --app-text: #e5eef8;
+  --app-text-muted: #95a5ba;
+  --app-accent: #60a5fa;
+  --app-accent-strong: #93c5fd;
+  --app-accent-soft: rgba(96, 165, 250, 0.14);
+  --app-code-bg: #0b1627;
+}
+
+@theme inline {
+  --color-background: var(--app-bg);
+  --color-foreground: var(--app-text);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 22%),
+    var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--font-plex-sans), sans-serif;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at top, rgba(96, 165, 250, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(9, 17, 29, 0.4), transparent 22%),
+    var(--app-bg);
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--app-accent-soft);
+}
+
+.app-shell-card {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  backdrop-filter: blur(18px);
+}
+
+.app-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.fd-sidebar,
+.fd-toc {
+  backdrop-filter: blur(18px);
+}
+
+.fd-sidebar,
+.fd-toc,
+.fd-nav,
+.fd-banner {
+  border-color: var(--app-border) !important;
+}
+
+.fd-nav {
+  background: color-mix(in srgb, var(--app-surface-strong) 78%, transparent);
+}
+
+.fd-sidebar [data-active="true"],
+.fd-toc [data-active="true"] {
+  background: var(--app-accent-soft);
+  color: var(--app-text);
+}
+
+.prose-code,
+pre,
+code {
+  font-family: var(--font-plex-mono), monospace;
+}
+
+pre {
+  border: 1px solid var(--app-border);
+  background: var(--app-code-bg) !important;
+}

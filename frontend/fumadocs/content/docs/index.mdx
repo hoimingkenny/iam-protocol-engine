@@ -1,0 +1,52 @@
+---
+title: Overview
+description: A compact map of the docs studio, the backend assumptions it makes, and the best starting points for OAuth and OIDC exploration.
+---
+
+This site is a personal-study companion for the IAM Protocol Engine. It is not a course shell and it is not trying to duplicate every Docusaurus page.
+
+Use it for:
+
+- interactive OAuth 2.0 and OIDC flow inspection
+- quick protocol lookups
+- API reference for the core auth endpoints
+- side-by-side reasoning about request parameters, redirects, and token payloads
+
+## Where To Start
+
+<Cards>
+  <Card
+    title="OAuth 2.0 PKCE Explorer"
+    href="/studio/oauth-pkce"
+  />
+  <Card
+    title="OIDC Login Explorer"
+    href="/studio/oidc-login"
+  />
+  <Card
+    title="API Reference"
+    href="/studio/api-reference"
+  />
+  <Card
+    title="Long-form Docusaurus Docs"
+    href="https://hoimingkenny.github.io/iam-protocol-engine/"
+  />
+</Cards>
+
+## Studio Assumptions
+
+- Backend default: `http://localhost:8080`
+- Public client default: `test-client`
+- Known demo subject shortcut: `subject=user1`
+- If you want the callback page to receive the auth code locally, register `http://localhost:3000/studio/callback` on the client first
+
+## Why Keep Two Docs Apps?
+
+The Docusaurus site remains the better home for broad written coverage.
+
+This Fumadocs app is better for:
+
+- step-by-step flow inspection
+- callback and token debugging
+- OpenAPI-backed endpoint exploration
+- quick day/night switching during study sessions

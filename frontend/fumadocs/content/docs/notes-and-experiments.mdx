@@ -1,0 +1,36 @@
+---
+title: Notes and Experiments
+description: A place to keep the caveats and setup details that make the interactive flow pages work smoothly in local development.
+---
+
+## Local callback setup
+
+The testing guide registers `test-client` with:
+
+```txt
+https://app.example.com/callback
+```
+
+If you want the studio callback page to receive the authorization code locally,
+register this callback as well:
+
+```txt
+http://localhost:3000/studio/callback
+```
+
+## Why the `subject` parameter exists
+
+The backend still supports the original Phase 2 shortcut for local testing:
+
+```txt
+/oauth2/authorize?...&subject=user1
+```
+
+That means the studio can exercise the full authorization code + PKCE flow
+without requiring the Admin UI login redirect first.
+
+## Study suggestions
+
+- Use the PKCE explorer to compare random verifiers with the RFC 7636 test vector.
+- Use the callback page after a real redirect so you can inspect returned `state`, `code`, and token payloads together.
+- Use the API reference page when you want the wire-level endpoint view without leaving the docs shell.

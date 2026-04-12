@@ -259,6 +259,6 @@ AuditEvent
 
 ## Related Docs
 
-- `doc/01. Product Brief.md` — Vision, why not Keycloak, product positioning
-- `doc/02. System Architecture.md` — Full technical brief, data model, NFRs
-- `doc/03. Learning & Interview Notes.md` — Interview angles, protocol rationale
+- `doc/01_PRODUCT-BRIEF.md` — Vision, why not Keycloak, product positioning
+- `doc/02_SYSTEM-ARCHITECTURE.md` — Full technical brief, data model, NFRs
+- `doc/study/01_LEARNING-AND-INTERVIEW-NOTES.md` — Interview angles, protocol rationale

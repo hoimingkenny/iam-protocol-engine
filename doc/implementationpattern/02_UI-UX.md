@@ -1,45 +1,45 @@
-# Reusable Learning Site UI/UX Brief
+# Reusable Docs UI/UX Brief
 
 ## Purpose
 
-Use this brief when restyling a docs-heavy learning site into a premium developer education platform.
+Use this brief when restyling a docs-heavy site into a polished personal study and technical reference space.
 
-This version reflects what actually worked in this repository during Phase 10:
+This version reflects the direction wanted for this repository:
 
 - keep the docs platform
 - redesign the shell
-- make navigation curriculum-first
+- optimize for personal study and quick lookup
 - keep the reading experience calm and technical
 - avoid over-designed UI patterns that fight the content
 
-This is intended to be reusable for future learning-site work.
+This is intended to be reusable for future documentation work.
 
 ---
 
 ## Product Goal
 
-The site should immediately answer 4 questions for the learner:
+The site should immediately answer 4 questions:
 
 1. where am I?
-2. which track or chapter am I in?
-3. what comes next?
-4. how do I move through the full curriculum?
+2. what am I looking at?
+3. how is this topic grouped with related material?
+4. how do I move around the docs quickly?
 
-The site should feel like a structured learning system, not a blog and not a marketing page.
+The site should feel like a thoughtful personal knowledge base and reference tool, not a blog, not a marketing page, and not a course platform.
 
 ---
 
 ## Reference Style
 
-Use AgentWay Learn only as a structural inspiration.
+Use high-quality docs products only as structural inspiration.
 
 Take inspiration from:
 
 - product shell
-- curriculum visibility
-- lesson progression
+- clear information grouping
 - docs-first reading flow
 - calm educational UX
+- strong technical readability
 
 Do not copy:
 
@@ -65,7 +65,7 @@ For this style of project, Docusaurus is usually enough if you customize:
 
 - navbar
 - sidebar
-- lesson shell
+- content shell
 - table of contents
 - typography
 - table and code block styling
@@ -105,16 +105,16 @@ For this style of project, Docusaurus is usually enough if you customize:
 - big shadows
 - playful badges
 - pill-like inline code everywhere
-- sidebar rows that look like buttons unless they truly are buttons
+- navigation rows that look like buttons unless they truly are buttons
 
 ---
 
 ## Core Layout
 
-Use a 4-zone learning shell:
+Use a 4-zone docs shell:
 
 1. sticky top navbar
-2. sticky left curriculum sidebar
+2. sticky left docs sidebar
 3. main reading column
 4. optional right-side TOC on large screens
 
@@ -184,7 +184,6 @@ Use this rhythm:
 ### Rules
 
 - one sidebar should feel like one font system
-- do not mix mono-style category labels with sans lesson rows unless there is a very strong reason
 - hierarchy should come primarily from:
   - indentation
   - color
@@ -202,23 +201,24 @@ Use this rhythm:
 
 ## Information Architecture
 
-Organize the curriculum into named tracks.
+Organize the docs by topic and reference value, not by course progression.
 
 Recommended structure:
 
-- Preparation
-- Foundations
-- Systems
-- Advanced
-- Specials
+- Introduction
+- Core Protocols
+- Supporting Systems
+- Security and Hardening
+- Reference
+- Notes and Experiments
 
 ### IA Rules
 
-- stable lesson IDs should be visible
-- sequence should be obvious
-- advanced topics should be separated clearly
-- docs content should remain reachable
-- overview pages should be part of the sequence, not hidden behind odd navigation behavior
+- grouping should feel natural for future lookup
+- docs content should remain reachable with low click depth
+- overview pages are useful, but not required for every section
+- sequence can exist where it helps, but it should not dominate the whole information architecture
+- advanced topics should be separated clearly without making them feel hidden
 
 ### Sidebar Rule Learned From Implementation
 
@@ -238,26 +238,26 @@ Instead:
 
 ## Sidebar Guidance
 
-The sidebar is the most important orientation tool in the product.
+The sidebar is the main orientation tool in the site.
 
 ### Functional Role
 
 It should feel like:
 
-- a syllabus
-- a track map
-- a structured learning rail
+- a map of the documentation
+- a structured topic index
+- a fast browsing rail
 
 It should not feel like:
 
 - a file tree
 - a stack of buttons
-- a generic docs menu
+- a syllabus
 
 ### Visual Rules
 
 - no borders around every item
-- avoid pill/button outlines
+- avoid pill or button outlines
 - use neutral hover and active fills
 - keep active state calm in light mode
 - active state should feel like a highlighted row, not a selected button
@@ -266,7 +266,7 @@ It should not feel like:
 
 ### Typography Rules
 
-- use the same font family for track rows, section rows, and lesson rows
+- use the same font family for section rows and doc rows
 - keep sizes nearly consistent
 - use color and indentation for hierarchy
 - avoid all-caps utility styling unless it is extremely restrained
@@ -279,10 +279,9 @@ Support:
 - hover
 - active/current
 - focus
-- completed
-- preview/locked
+- optional pinned or favorite state if useful
 
-Do not rely on color alone for completed or preview states.
+Do not rely on color alone for state.
 
 ### Active State Recommendation
 
@@ -312,8 +311,7 @@ Include:
 - brand
 - main navigation
 - search trigger
-- language switcher or placeholder
-- account/sign-in CTA if useful
+- theme switcher or utility slot if useful
 
 ### Behavior
 
@@ -323,22 +321,22 @@ Include:
 
 ---
 
-## Lesson Page Guidance
+## Content Page Guidance
 
 ### Top-of-Page Structure
 
 - strong H1
 - one-sentence summary
-- metadata row
-- optional info capsule strip
+- optional metadata row
+- optional quick-links or context capsule strip
 
 Suggested metadata:
 
-- lesson ID
-- duration
-- lesson type
+- protocol or topic area
+- spec or RFC references
+- related endpoints
 - prerequisites
-- related exercise
+- related notes
 
 ### Content Behavior
 
@@ -413,7 +411,7 @@ Avoid:
 
 Required:
 
-- keyboard navigation for navbar, sidebar, TOC, and lesson navigation
+- keyboard navigation for navbar, sidebar, TOC, and page navigation
 - visible but calm focus states
 - no color-only status encoding
 - no sticky overlap
@@ -423,23 +421,19 @@ Required:
 
 ## Component Checklist
 
-If building a full learning shell, create or restyle:
+If building a full docs shell, create or restyle:
 
 - `GlobalHeader`
 - `SearchTrigger`
-- `LanguageSwitcher`
-- `LearnSidebar`
-- `TrackSection`
-- `LessonNavItem`
-- `LessonBadge`
-- `LessonHeader`
-- `LessonMetaBar`
-- `InfoCapsuleRow`
+- `DocsSidebar`
+- `SidebarSection`
+- `SidebarNavItem`
+- `DocHeader`
+- `DocMetaBar`
+- `ContextCapsuleRow`
 - `ContentCallout`
-- `PrevNextFooter`
-- `ProgressCTA`
-- `MobileCourseDrawer`
 - `RightToc`
+- `MobileDocsDrawer`
 
 Not every project needs all of them on day one, but this is the target system.
 
@@ -449,13 +443,13 @@ Not every project needs all of them on day one, but this is the target system.
 
 The design is successful if:
 
-- the site feels like a premium docs-based learning platform
-- the learner always knows where they are
-- progression is obvious
-- the sidebar feels like a syllabus, not a file explorer
+- the site feels like a premium docs and reference experience
+- the user always knows where they are
+- topic grouping is clear
+- the sidebar feels like a documentation map, not a file explorer
 - the reading experience is calm and structured
 - code and tables feel intentional, not default markdown output
-- the design feels original while clearly learning from the strengths of AgentWay Learn
+- the design feels original and appropriate for technical study
 
 ---
 

@@ -2,10 +2,17 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+const interactiveDocsUrl =
+  process.env.INTERACTIVE_DOCS_URL ?? 'http://localhost:3000';
+
 const config: Config = {
   title: 'IAM Protocol Engine',
   tagline: 'RFC-level IAM from scratch',
   favicon: 'img/favicon.ico',
+  themes: ['@docusaurus/theme-mermaid'],
+  markdown: {
+    mermaid: true,
+  },
 
   future: {
     v4: true,
@@ -34,7 +41,6 @@ const config: Config = {
           showLastUpdateTime: true,
           sidebarCollapsible: true,
           sidebarCollapsed: false,
-          editUrl: 'https://github.com/hoimingkenny/iam-protocol-engine/edit/main/frontend/app/',
         },
         blog: false,
         theme: {
@@ -45,6 +51,15 @@ const config: Config = {
   ],
 
   themeConfig: {
+    docs: {
+      sidebar: {
+        hideable: true,
+        autoCollapseCategories: false,
+      },
+    },
+    mermaid: {
+      theme: {light: 'neutral', dark: 'dark'},
+    },
     image: 'img/docusaurus-social-card.jpg',
     colorMode: {
       defaultMode: 'light',
@@ -68,6 +83,11 @@ const config: Config = {
         {
           to: '/Reference/System-Architecture',
           label: 'Reference',
+          position: 'left',
+        },
+        {
+          href: interactiveDocsUrl,
+          label: 'Interactive Docs',
           position: 'left',
         },
         {

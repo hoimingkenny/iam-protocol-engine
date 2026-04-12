@@ -193,13 +193,13 @@ Chapters written alongside Phase 1 code:
 
 | Chapter | Source |
 |---------|--------|
-| `01-Bootstrap/00-Overview` | `doc/04. Phase 1 Code Change Summary.md` |
+| `01-Bootstrap/00-Overview` | `doc/codechange/01_P1-CODE-CHANGE-SUMMARY.md` |
 | `01-Bootstrap/01-Maven-Modules` | Phase 1 task docs |
 | `01-Bootstrap/02-Docker-Compose` | Phase 1 task docs |
 | `01-Bootstrap/03-JPA-Entities` | Phase 1 task docs |
 | `01-Bootstrap/04-API-Gateway` | Phase 1 task docs |
 | `01-Bootstrap/05-Tests` | Phase 1 task docs |
-| `00-Introduction/01-Why-This-Project` | `doc/01. Product Brief.md` |
+| `00-Introduction/01-Why-This-Project` | `doc/01_PRODUCT-BRIEF.md` |
 
 Reference docs migrated: System Architecture, Learning & Interview Notes, Spec, Implementation Plan.
 
@@ -830,7 +830,7 @@ Phase 7 SAML collection includes:
 - [ ] All Phase 7 code compiles and module tests pass
 - [ ] `frontend/app/docs/07-SAML/` chapters written and navigable
 - [ ] Postman collection includes SAML 2.0 sequences with variable substitution
-- [ ] `doc/10. Phase 7 Code Change Summary.md` written
+- [ ] `doc/codechange/06_P7-CODE-CHANGE-SUMMARY.md` written
 
 **Verification:** Learning site renders correctly; Postman collection passes schema validation.
 
@@ -1165,27 +1165,27 @@ Phase 7 SAML collection includes:
 
 ---
 
-### Phase 11: Fumadocs Interactive Learning Lab
+### Phase 11: Fumadocs Interactive Docs Studio
 
-**Goal:** Add a second documentation experience powered by Next.js + Fumadocs for interactive authorization flow walkthroughs, while preserving the existing Docusaurus learning site as the canonical long-form curriculum.
+**Goal:** Add a second documentation experience powered by Next.js + Fumadocs for interactive authorization flow walkthroughs, protocol reference, and personal study tooling, while preserving the existing Docusaurus site as the broader long-form documentation base.
 
-**Planning assumption:** Phase 11 introduces a new app in `frontend/fumadocs/` instead of migrating `frontend/app/`. Docusaurus remains live and maintained. The new Fumadocs site focuses on interactive protocol visualizations, guided demos, and API-backed learning surfaces that benefit from Next.js server capabilities.
+**Planning assumption:** Phase 11 introduces a new app in `frontend/fumadocs/` instead of migrating `frontend/app/`. Docusaurus remains live and maintained. The new Fumadocs site focuses on interactive protocol visualizations, API-backed reference surfaces, and study-friendly technical exploration that benefits from Next.js server capabilities.
 
 **Reference inputs:** Fumadocs official docs, existing IAM protocol content in `frontend/app/docs/`, backend modules under `backend/`
 
 **Execution branch:** `phase-11-develop`
 
 **Implementation approach:**
-- Keep `frontend/app/` as the current Docusaurus course site with no breaking route or content removal
-- Add `frontend/fumadocs/` as a separate Next.js app using Fumadocs for interactive learning and API documentation
+- Keep `frontend/app/` as the current Docusaurus documentation site with no breaking route or content removal
+- Add `frontend/fumadocs/` as a separate Next.js app using Fumadocs for interactive docs and API reference
 - Treat Spring Boot as the protocol engine and source of truth; Next.js is a presentation and orchestration layer only
-- Reuse existing Markdown and architecture knowledge where practical, but adapt content into interaction-first experiences instead of mirroring pages one-for-one
-- Prefer static generation for narrative docs and server routes only where interactivity, proxying, or secure demo glue is actually needed
+- Reuse existing Markdown and architecture knowledge where practical, but adapt content into interaction-first reference experiences instead of mirroring pages one-for-one
+- Prefer static generation for narrative/reference pages and server routes only where interactivity, proxying, or secure demo glue is actually needed
 
 **Non-goals:**
 - Do not replace the Java backend with Next.js API logic
 - Do not silently migrate or deprecate the Docusaurus site during this phase
-- Do not create a second copy of every existing lesson without a distinct interactive purpose
+- Do not create a second copy of every existing doc without a distinct interactive or reference purpose
 - Do not change token lifetimes, grant types, persistence design, or protocol security constraints as part of frontend work
 
 ---
@@ -1217,17 +1217,17 @@ Phase 7 SAML collection includes:
 
 ---
 
-#### Task 34: Interactive OAuth/OIDC Flow Lab
+#### Task 34: Interactive OAuth/OIDC Flow Explorer
 
-**Description:** Build the first interactive learning lab in Fumadocs for OAuth 2.0 Authorization Code + PKCE and OIDC login, with step-by-step state visualization, request/response examples, and callback-aware demo pages.
+**Description:** Build the first interactive flow explorer in Fumadocs for OAuth 2.0 Authorization Code + PKCE and OIDC login, with step-by-step state visualization, request/response examples, and callback-aware demo pages.
 
 **Acceptance criteria:**
 - [ ] Interactive flow pages explain the major actors, requests, redirects, and token issuance steps
 - [ ] Users can walk through Authorization Code + PKCE from browser UI to callback result
 - [ ] OIDC additions such as discovery, ID token, and UserInfo are represented in the flow experience
-- [ ] UI exposes request parameters, returned payloads, and state transitions in a teaching-friendly way
+- [ ] UI exposes request parameters, returned payloads, and state transitions in a study-friendly, inspectable way
 - [ ] Demo pages can safely read from configured backend endpoints without weakening protocol constraints
-- [ ] Callback and token display surfaces clearly distinguish demo UX from production guidance
+- [ ] Callback and token display surfaces clearly distinguish study/demo UX from production guidance
 
 **Verification:** Local walkthrough completes authorize redirect, callback handling, and token/result inspection against the existing Spring backend.
 
@@ -1245,14 +1245,14 @@ Phase 7 SAML collection includes:
 
 #### Task 35: API Reference + OpenAPI Integration
 
-**Description:** Use Fumadocs OpenAPI support to create a richer API reference for selected IAM endpoints, with interactive request exploration and curated protocol explanations.
+**Description:** Use Fumadocs OpenAPI support to create a richer API reference for selected IAM endpoints, with interactive request exploration and concise protocol context.
 
 **Acceptance criteria:**
 - [ ] At least one high-value API area is exposed through Fumadocs OpenAPI pages
 - [ ] API reference includes endpoint purpose, parameters, example payloads, and response semantics
 - [ ] Interactive API exploration is constrained to approved local/demo targets only
 - [ ] Generated API pages are integrated into the overall docs navigation rather than left as a disconnected sandbox
-- [ ] OpenAPI reference complements narrative lessons instead of replacing protocol explanations
+- [ ] OpenAPI reference complements narrative docs instead of replacing protocol explanations
 
 **Verification:** Fumadocs build succeeds and rendered API pages load correctly in the local app.
 
@@ -1273,7 +1273,7 @@ Phase 7 SAML collection includes:
 **Description:** Finalize how Docusaurus and Fumadocs link to each other, document hosting strategy, and ensure contributors can develop and deploy both sites without confusion.
 
 **Acceptance criteria:**
-- [ ] Primary navigation makes the distinction between "Curriculum Docs" and "Interactive Lab" obvious
+- [ ] Primary navigation makes the distinction between "Documentation" and "Interactive Docs" obvious
 - [ ] Both sites link to each other intentionally without route ambiguity
 - [ ] Deployment strategy is documented for local dev, preview, and production hosting
 - [ ] Contributor documentation explains when to add content to Docusaurus versus Fumadocs
@@ -1304,27 +1304,27 @@ Phase 7 SAML collection includes:
 
 ### Checkpoint: Phase 11
 
-- [ ] Docusaurus remains intact as the long-form curriculum site
+- [ ] Docusaurus remains intact as the long-form documentation site
 - [ ] A new Fumadocs app exists in `frontend/fumadocs/`
-- [ ] Interactive OAuth/OIDC flow learning experience works against the existing backend
+- [ ] Interactive OAuth/OIDC flow explorer works against the existing backend
 - [ ] API reference experience proves the value of Fumadocs beyond static content
 - [ ] Dual-site information architecture and deployment guidance are documented
 - [ ] Human architectural review confirms the two-site model is worth maintaining
 
 ---
 
-### Learning Site: Phase 11 Surfaces
+### Documentation: Phase 11 Surfaces
 
 **Location:** `frontend/fumadocs/`
-**Role:** Interactive lab and API explorer alongside the Docusaurus curriculum
+**Role:** Interactive docs studio and API explorer alongside the Docusaurus documentation site
 
 | Surface | Source |
 |---------|--------|
-| `Interactive Flow Home` | Phase 11 overview, flow-lab positioning |
-| `OAuth 2.0 PKCE Lab` | Existing Phase 2 docs and live backend behavior |
-| `OIDC Login Lab` | Existing Phase 3 docs and discovery/token payloads |
+| `Interactive Flow Home` | Phase 11 overview, interactive-docs positioning |
+| `OAuth 2.0 PKCE Explorer` | Existing Phase 2 docs and live backend behavior |
+| `OIDC Login Explorer` | Existing Phase 3 docs and discovery/token payloads |
 | `API Reference` | OpenAPI-backed endpoint reference for selected flows |
-| `Dual-Site Navigation` | Cross-links between Docusaurus curriculum and Fumadocs lab |
+| `Dual-Site Navigation` | Cross-links between Docusaurus docs and Fumadocs interactive docs |
 
 ---
 
