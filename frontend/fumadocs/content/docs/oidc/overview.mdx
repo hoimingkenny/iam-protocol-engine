@@ -1,0 +1,58 @@
+---
+title: OIDC Layer
+---
+
+
+## What OIDC Adds Over OAuth 2.0
+
+OAuth 2.0 answers: *"does the client have permission to access this resource?"*
+
+OpenID Connect answers: *"who is the user, and what information can the client learn about them?"*
+
+The identity layer consists of:
+- **ID Token** — a signed JWT containing the user's identity claims (`sub`, `iss`, `aud`, `exp`, `iat`)
+- **Discovery document** — a well-known JSON file describing the server's capabilities
+- **JWKS endpoint** — the server's public keys so clients can verify ID token signatures
+- **UserInfo endpoint** — a protected API to retrieve additional claims about the user
+
+## Endpoints
+
+```
+# OIDC Discovery (RFC 8414)
+GET /.well-known/openid-configuration  → returns server metadata
+
+# JWKS — public keys for signature verification (RFC 7517)
+GET /.well-known/jwks.json            → returns RSA public key(s) with kid
+
+# Auth Code flow now includes ID token (OIDC Core 1.0 §3.1)
+GET  /oauth2/authorize                → same as OAuth 2.0
+POST /oauth2/token                    → returns access_token + refresh_token + id_token
+
+# UserInfo — additional claims for authenticated user (OIDC Core 1.0 §5.3)
+GET  /userinfo                        → returns sub, name, email, scope (Bearer required)
+```
+
+## ID Token
+
+A signed JWT with claims:
+
+```json
+{
+  "iss": "http://localhost:8080",
+  "sub": "<user_id>",
+  "aud": "<client_id>",
+  "exp": 1719000000,
+  "iat": 1718996400,
+  "nonce": "<from_auth_request>"
+}
+```
+
+Signed with RS256 (RSA + SHA-256). The public key is published at `/.well-known/jwks.json`.
+
+## Key Properties
+
+**RS256 from day one.** No symmetric (HS256) keys. Every token is signed with an RSA-2048 private key.
+
+**kid is the certificate thumbprint.** The key identity is the SHA-256 digest of the X.509 certificate, Base64-URL encoded without padding. This is stable across restarts.
+
+**Key rotation without downtime.** Both old and new public keys are served in JWKS. Existing tokens continue to validate; new tokens use the new key.

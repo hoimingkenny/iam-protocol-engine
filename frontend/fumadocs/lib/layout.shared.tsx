@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import { appName, docusaurusDocsUrl, gitConfig, studioRoute } from './shared';
+import { appName, gitConfig, studioRoute } from './shared';
 import { BookOpenText, Compass, ExternalLink, FileCode2 } from 'lucide-react';
 
 export function baseOptions(): BaseLayoutProps {
@@ -39,12 +39,6 @@ export function baseOptions(): BaseLayoutProps {
         text: 'GitHub',
         label: 'GitHub repository',
         icon: <ExternalLink className="size-4" />,
-      },
-      {
-        text: 'Long-form Docs',
-        url: docusaurusDocsUrl,
-        external: true,
-        on: 'menu',
       },
     ],
   };

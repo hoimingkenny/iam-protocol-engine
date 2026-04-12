@@ -1,0 +1,50 @@
+---
+title: Admin UI
+---
+
+
+## Login Flow
+
+The Admin UI authenticates users via username/password and issues tokens through the standard OAuth 2.0 PKCE flow.
+
+```
+Browser (Admin UI)
+    │
+    ├─ GET /login              → LoginPage (username/password form)
+    ├─ POST /login              → LoginController (authenticate, issue login_token)
+    ├─ GET /oauth2/authorize    → redirect with login_token (PKCE flow)
+    ├─ GET /callback           → CallbackPage (exchange code → tokens)
+    └─ GET /admin/*            → AdminController (Bearer token required)
+            │
+            ├─ /admin/clients   → OAuth client list
+            ├─ /admin/audit     → Audit event log
+            └─ /admin/users     → User list
+```
+
+## Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/login` | None | Login page |
+| `POST` | `/login` | None | Authenticate, issue login_token |
+| `GET` | `/admin/clients` | Bearer | List OAuth clients |
+| `GET` | `/admin/audit` | Bearer | Audit event log |
+| `GET` | `/admin/users` | Bearer | User list |
+
+## Test Accounts
+
+| Username | Password |
+|----------|----------|
+| `admin` | `admin123` |
+| `user1` | `user1pass` |
+| `alice` | `alicepass` |
+
+## Start the Frontend
+
+```bash
+cd frontend/admin
+npm install
+npm run dev   # → http://localhost:5173
+```
+
+Backend must be running at `http://localhost:8080`.

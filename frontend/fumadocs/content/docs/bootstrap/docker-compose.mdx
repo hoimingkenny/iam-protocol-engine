@@ -1,0 +1,116 @@
+---
+title: Docker Compose — PostgreSQL + Redis
+
+---
+
+
+## What Was Built
+
+```yaml
+# infra/docker-compose.yml
+services:
+  postgres:
+    image: postgres:16
+    container_name: iam-postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: iam_engine
+      POSTGRES_USER: iam_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iam_user -d iam_engine"]
+
+  redis:
+    image: redis:7
+    container_name: iam-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+```
+
+## Environment-Based Secrets
+
+Passwords are never hardcoded. `infra/.env` holds the secrets:
+
+```bash
+POSTGRES_PASSWORD=iam_password_dev
+REDIS_PASSWORD=redis_password_dev
+```
+
+`docker-compose.yml` loads them via `env_file: .env`. The application reads the same env vars via `${POSTGRES_PASSWORD}` and `${REDIS_PASSWORD}` in `application.yml`.
+
+## Start / Stop
+
+```bash
+docker compose -f infra/docker-compose.yml up -d      # Start
+docker compose -f infra/docker-compose.yml down        # Stop
+docker compose -f infra/docker-compose.yml logs -f    # Tail logs
+```
+
+## Flyway Migrations
+
+After Docker is running, apply database migrations:
+
+```bash
+./mvnw flyway:migrate -pl backend/auth-core
+```
+
+This runs `V1__init.sql` which creates all 10 tables with 16 indexes.
+
+## Connection Details
+
+| Service | Host | Port | Password |
+|---------|------|------|----------|
+| PostgreSQL | `localhost` | `5432` | `iam_password_dev` |
+| Redis | `localhost` | `6379` | `redis_password_dev` |
+
+JDBC: `jdbc:postgresql://localhost:5432/iam_engine`
+
+## macOS Docker Desktop — Known Networking Issue
+
+Docker Desktop on macOS NATs `localhost:5432` connections through its VM. PostgreSQL sees the source IP as a Docker-internal address (e.g. `172.17.0.x`), **not** `127.0.0.1`. This means the `pg_hba.conf` `trust` rule for `127.0.0.1/32` does not match, and connections fall through to `scram-sha-256` auth.
+
+**Symptom:** App fails to start with `FATAL: password authentication failed for user "iam_user"`.
+
+**Fix:** Add a catch-all `trust` rule for all host connections. On the running container:
+
+```bash
+docker exec iam-postgres sed -i '$ a host all all 0.0.0.0/0 trust' /var/lib/postgresql/data/pg_hba.conf
+docker restart iam-postgres
+```
+
+> Note: This fix is ephemeral — container restarts or `docker compose down -v` will reset it. For a permanent fix, mount a custom `pg_hba.conf` via a volume or configure the `postgres` Docker image with an init script that sets the correct rules at first start.
+
+**Workaround for CI/dev machines:** The Docker Compose infra is primarily for local development. In CI, use a test container or H2 in-memory database (which the test profile already uses).
+
+## Flyway Migrations
+
+The Flyway Maven plugin (`./mvnw flyway:migrate`) is not yet wired into the build — the plugin is not configured in the Maven POM. For now, tables are created via `V1__init.sql` which is applied automatically by the running application on first startup if Flyway were enabled, or manually via:
+
+```bash
+docker exec -i iam-postgres psql -U iam_user -d iam_engine < backend/auth-core/src/main/resources/db/migration/V1__init.sql
+```
+
+## Key Decision: `flyway-core` + `flyway-database-postgresql`
+
+Spring Boot 3 requires both dependencies explicitly. The old single `flyway` transitive dependency is gone.
+
+```xml
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-postgresql</artifactId>
+</dependency>
+```

@@ -1,0 +1,63 @@
+---
+title: Maven Multi-Module Architecture
+---
+
+```
+iam-protocol-engine/
+├── pom.xml                      ← Parent POM (Java 21, Spring Boot 3.3.0 BOM)
+├── backend/
+│   ├── pom.xml                  ← Backend aggregator POM
+│   ├── auth-core/pom.xml        ← JPA, Redis, Flyway, PostgreSQL, H2
+│   ├── oauth-oidc/pom.xml       ← OAuth 2.0 + OIDC endpoints
+│   ├── saml-federation/pom.xml  ← SAML 2.0 SP + bridge
+│   ├── scim/pom.xml             ← SCIM 2.0 /Users /Groups
+│   ├── mfa/pom.xml              ← TOTP + WebAuthn
+│   ├── device-flow/pom.xml      ← RFC 8628 Device Authorization Grant
+│   ├── demo-resource/pom.xml    ← Protected sample API
+│   └── api-gateway/pom.xml       ← Spring Boot entry point
+└── mvnw                         ← Maven wrapper
+```
+
+## Why Multi-Module?
+
+Each protocol is isolated in its own module. `auth-core` holds all JPA entities and repositories — every other module depends on it. This enforces a clear dependency boundary: protocol logic never leaks into the data layer.
+
+## The `relativePath` Decision
+
+All 8 module POMs use `relativePath=../../pom.xml`:
+
+```xml
+<parent>
+    <groupId>com.iam</groupId>
+    <artifactId>iam-protocol-engine</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+</parent>
+```
+
+From `backend/oauth-oidc/pom.xml`, `../../pom.xml` resolves to the root `pom.xml` two levels up. Using `..` would resolve to `backend/pom.xml`, breaking the build.
+
+## Module Dependencies
+
+```
+auth-core (entities, repos, AuditService)
+    ↑
+    ├──────────────────────────────┐
+    │                              │
+oauth-oidc                      demo-resource
+(oauth-oidc also provides           ↑
+token validation filter)        api-gateway
+    ↑
+    ├────────────┐
+    │
+saml-federation, scim, mfa, device-flow
+```
+
+## Build Commands
+
+```bash
+./mvnw clean install              # Build all modules
+./mvnw test                       # Run all tests
+./mvnw test -pl backend/auth-core  # Test single module
+./mvnw spring-boot:run -pl backend/api-gateway  # Run gateway
+```

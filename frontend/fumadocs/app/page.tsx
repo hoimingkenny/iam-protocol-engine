@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpenText, FileCode2, MoonStar } from 'lucide-react';
-import { docusaurusDocsUrl, studioRoute } from '@/lib/shared';
+import { studioRoute } from '@/lib/shared';
 
 const cards = [
   {
@@ -13,8 +13,8 @@ const cards = [
   {
     title: 'Written Docs',
     description:
-      'Open the Docusaurus site for the long-form walkthroughs, architecture notes, and protocol chapters.',
-    href: docusaurusDocsUrl,
+      'Browse the reference docs and phase overviews — Bootstrap through Demo Hardening.',
+    href: '/docs',
     icon: BookOpenText,
   },
 ];
@@ -34,10 +34,9 @@ export default function HomePage() {
                 A calmer docs studio for studying OAuth, OIDC, and the shape of the protocol itself.
               </h1>
               <p className="max-w-3xl text-base leading-8 text-[var(--app-text-muted)] sm:text-lg">
-                This site keeps the Docusaurus curriculum intact and adds a
-                second surface designed for personal reference: inspectable
+                A study companion for IAM protocol engineering: inspectable
                 flows, local callback debugging, OpenAPI-backed endpoint views,
-                and a quieter docs shell that works in both light and dark mode.
+                phase overviews, and a quieter docs shell that works in both light and dark mode.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

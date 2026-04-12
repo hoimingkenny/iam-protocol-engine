@@ -3,7 +3,7 @@ title: Overview
 description: A compact map of the docs studio, the backend assumptions it makes, and the best starting points for OAuth and OIDC exploration.
 ---
 
-This site is a personal-study companion for the IAM Protocol Engine. It is not a course shell and it is not trying to duplicate every Docusaurus page.
+This site is a personal-study companion for the IAM Protocol Engine — interactive flow inspection, API reference, phase overviews, and reference docs.
 
 Use it for:
 
@@ -11,8 +11,9 @@ Use it for:
 - quick protocol lookups
 - API reference for the core auth endpoints
 - side-by-side reasoning about request parameters, redirects, and token payloads
+- phase-by-phase narrative overviews
 
-## Where To Start
+## Interactive Studios
 
 <Cards>
   <Card
@@ -28,9 +29,31 @@ Use it for:
     href="/studio/api-reference"
   />
   <Card
-    title="Long-form Docusaurus Docs"
-    href="https://hoimingkenny.github.io/iam-protocol-engine/"
+    title="Callback Inspector"
+    href="/studio/callback"
   />
+</Cards>
+
+## Phase Overviews
+
+<Cards>
+  <Card title="Phase 1 — Bootstrap" href="/docs/phases/phase-01-bootstrap" />
+  <Card title="Phase 2 — OAuth 2.0 Core" href="/docs/phases/phase-02-oauth2" />
+  <Card title="Phase 3 — OIDC Layer" href="/docs/phases/phase-03-oidc" />
+  <Card title="Phase 4 — Token Lifecycle" href="/docs/phases/phase-04-token-lifecycle" />
+  <Card title="Phase 5 — Admin UI" href="/docs/phases/phase-05-admin-ui" />
+  <Card title="Phase 6 — SCIM 2.0" href="/docs/phases/phase-06-scim" />
+  <Card title="Phase 7 — SAML 2.0" href="/docs/phases/phase-07-saml" />
+  <Card title="Phase 8 — MFA" href="/docs/phases/phase-08-mfa" />
+  <Card title="Phase 9 — Demo Hardening" href="/docs/phases/phase-09-demo-hardening" />
+</Cards>
+
+## Reference Docs
+
+<Cards>
+  <Card title="Specification" href="/docs/reference/ref-spec" />
+  <Card title="System Architecture" href="/docs/reference/ref-system-architecture" />
+  <Card title="Learning & Interview Notes" href="/docs/reference/ref-learning-notes" />
 </Cards>
 
 ## Studio Assumptions
@@ -39,14 +62,3 @@ Use it for:
 - Public client default: `test-client`
 - Known demo subject shortcut: `subject=user1`
 - If you want the callback page to receive the auth code locally, register `http://localhost:3000/studio/callback` on the client first
-
-## Why Keep Two Docs Apps?
-
-The Docusaurus site remains the better home for broad written coverage.
-
-This Fumadocs app is better for:
-
-- step-by-step flow inspection
-- callback and token debugging
-- OpenAPI-backed endpoint exploration
-- quick day/night switching during study sessions

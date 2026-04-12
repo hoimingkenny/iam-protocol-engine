@@ -1,0 +1,165 @@
+---
+title: demo-resource — Validating Bearer Tokens
+
+---
+
+
+## The Problem
+
+Once a client has an access token, how does a protected API know whether to accept it? In Phase 2, the answer is: the API calls back to the AS to validate the token.
+
+This is the **Resource Server** role in OAuth 2.0.
+
+## Bearer Token Authentication
+
+The client presents the token in the `Authorization` header:
+
+```
+GET /api/resource HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...
+```
+
+The resource server must:
+1. Extract the token from the header
+2. Validate it (Phase 2: DB lookup; Phase 3: JWT signature verification)
+3. Check it's not expired and not revoked
+4. Set the user's identity in the security context
+
+## Phase 2: Opaque Token Validation
+
+In Phase 2, access tokens are random strings (opaque). The resource server validates them by looking them up in the database:
+
+```java
+@Service
+public class TokenValidationService {
+    private final TokenRepository tokenRepo;
+
+    public ValidationResult validate(String jti) {
+        Optional<Token> optToken = tokenRepo.findByJtiAndRevokedFalse(jti);
+        if (optToken.isEmpty()) return ValidationResult.invalid();
+
+        Token token = optToken.get();
+
+        if (token.getExpiresAt().isBefore(Instant.now()))
+            return ValidationResult.invalid();
+
+        if (token.getType() != TokenType.access_token)
+            return ValidationResult.invalid();
+
+        return new ValidationResult(true, token.getSubject(), token.getScope());
+    }
+}
+```
+
+This is inefficient — every API call hits the database. Phase 3 replaces this with local JWT validation using JWKS.
+
+## The Security Filter Chain
+
+```
+Request → BearerTokenAuthenticationFilter
+             ↓
+          Extract "Bearer <token>"
+             ↓
+          tokenValidationService.validate(token)
+             ↓ (valid)
+          SecurityContext.setAuthentication(
+               UsernamePasswordAuthenticationToken(subject, null, SCOPE_openid, SCOPE_profile)
+             )
+             ↓
+          ResourceController.resource(subject)
+```
+
+## Security Filter Implementation
+
+```java
+public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
+
+    private final TokenValidationService tokenValidationService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                   HttpServletResponse response,
+                                   FilterChain chain) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring("Bearer ".length()).trim();
+            ValidationResult result = tokenValidationService.validate(token);
+
+            if (result.isValid()) {
+                List<SimpleGrantedAuthority> authorities =
+                    Arrays.stream(result.scope().split("\\s+"))
+                        .filter(s -> !s.isBlank())
+                        .map(s -> new SimpleGrantedAuthority("SCOPE_" + s))
+                        .toList();
+
+                var authentication = new UsernamePasswordAuthenticationToken(
+                    result.subject(), null, authorities
+                );
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }
+
+        chain.doFilter(request, response);
+    }
+}
+```
+
+## Spring Security Configuration
+
+```java
+@Configuration
+@EnableWebSecurity
+public class ResourceSecurityConfig {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/health", "/actuator/**").permitAll()
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll()
+            )
+            .addFilterBefore(
+                new BearerTokenAuthenticationFilter(tokenValidationService),
+                UsernamePasswordAuthenticationFilter.class
+            );
+        return http.build();
+    }
+}
+```
+
+Key decisions:
+- **Stateless**: no session cookies — each request carries the Bearer token
+- **Filter before UsernamePasswordAuthenticationFilter**: our filter sets the authentication, Spring Security's `AuthenticatedAnnotationMethodArgumentResolver` (via `@AuthenticationPrincipal`) picks it up
+- **permitAll /health**: health checks don't need auth
+
+## What SC-14 Requires
+
+> SC-14: Protected demo API rejects requests without valid Bearer token
+
+```
+curl http://localhost:8080/api/resource
+→ 401 Unauthorized
+
+curl http://localhost:8080/api/resource \
+  -H "Authorization: Bearer invalid-token"
+→ 401 Unauthorized
+
+curl http://localhost:8080/api/resource \
+  -H "Authorization: Bearer <valid-access-token>"
+→ 200 OK + {"message": "...", "subject": "user-123"}
+```
+
+## From Phase 2 to Phase 3
+
+In Phase 2, every API call hits PostgreSQL to validate the token. In Phase 3, the access token becomes a signed JWT:
+
+```
+Phase 2:  Client → API → PostgreSQL (validate token) → 200 OK
+Phase 3:  Client → API → verify JWT signature locally (no DB call) → 200 OK
+```
+
+The `TokenValidationService` interface stays the same — only the implementation changes from DB lookup to JWT verification.

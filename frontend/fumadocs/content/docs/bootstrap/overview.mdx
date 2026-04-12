@@ -1,0 +1,61 @@
+---
+title: Bootstrap
+
+---
+
+
+## Module Architecture
+
+```
+iam-protocol-engine/
+├── pom.xml                      ← Parent POM (Java 21, Spring Boot 3.3.0 BOM)
+├── backend/
+│   ├── pom.xml                  ← Backend aggregator POM
+│   ├── auth-core/pom.xml        ← JPA entities, Redis, Flyway, PostgreSQL
+│   ├── oauth-oidc/pom.xml       ← OAuth 2.0 + OIDC endpoints
+│   ├── saml-federation/pom.xml  ← SAML 2.0 SP + bridge
+│   ├── scim/pom.xml             ← SCIM 2.0 /Users /Groups
+│   ├── mfa/pom.xml              ← TOTP + WebAuthn
+│   ├── device-flow/pom.xml       ← RFC 8628 Device Authorization Grant
+│   ├── demo-resource/pom.xml     ← Protected sample API
+│   └── api-gateway/pom.xml       ← Spring Boot entry point
+└── mvnw                         ← Maven wrapper
+```
+
+## Data Layer
+
+**auth-core** holds all JPA entities and repositories. Every other module depends on it — this enforces a clear boundary between data and protocol layers.
+
+| Entity | Purpose |
+|--------|---------|
+| `OAuthClient` | Client registry (client_id, hashed secret, redirect_uris) |
+| `AuthCode` | Short-lived auth codes with PKCE code_challenge |
+| `Token` | Access/refresh/ID tokens (jti, type, subject, expiry) |
+| `ScimUser`, `ScimGroup` | SCIM identity store |
+| `WebAuthnCredential`, `TotpCredential` | MFA credentials |
+| `DeviceCode` | RFC 8628 device flow state |
+
+## Build Commands
+
+```bash
+# Build all modules
+./mvnw clean install
+
+# Run tests
+./mvnw test
+
+# Run gateway (starts all modules)
+./mvnw spring-boot:run -pl backend/api-gateway
+
+# Apply database migrations
+./mvnw flyway:migrate -pl backend/auth-core
+```
+
+## Infrastructure
+
+```bash
+# Start PostgreSQL + Redis
+docker compose -f infra/docker-compose.yml up -d
+```
+
+PostgreSQL holds persistent state (clients, tokens, users). Redis holds short-lived state (auth codes, device codes, refresh tokens).

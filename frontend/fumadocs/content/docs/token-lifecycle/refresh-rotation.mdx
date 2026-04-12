@@ -1,0 +1,107 @@
+---
+title: Refresh Token Rotation
+
+---
+
+
+## What It Is
+
+Refresh token rotation (RFC 6749 §6) is a security mechanism where each use of a refresh token automatically issues a new refresh token, invalidating the old one. This limits the damage a stolen refresh token can do.
+
+```
+1. Client → POST /token (grant_type=refresh_token, refresh_token=rt_old)
+2. Server ← { access_token: at_new, refresh_token: rt_new }
+3. Client → POST /token (grant_type=refresh_token, refresh_token=rt_new)
+4. Server ← { access_token: at_newer, refresh_token: rt_newer }
+5. (if attacker tries rt_old again) → invalid_grant
+```
+
+## Why Rotation?
+
+The threat model: an attacker steals a refresh token (e.g., from a compromised database, a logging endpoint, or a man-in-the-middle). Without rotation, the attacker can get new access tokens indefinitely until the refresh token expires (7 days).
+
+With rotation, the attacker's use of the stolen token immediately revokes it — and because the server detects reuse, it also revokes the replacement token that the legitimate client just received. The attacker gets one successful use; the legitimate client must re-authenticate.
+
+## RFC 6749 §6 Specification
+
+The server:
+1. Authenticates the client
+2. Returns a new refresh token
+3. **Invalidates the submitted refresh token** — it MUST NOT be accepted again
+
+If the submitted token is used more than once, the server revokes the entire token family (the used token + any token issued subsequently).
+
+## Implementation
+
+**Atomic rotation** in a single database transaction:
+
+```java
+@Transactional
+public TokenResponse handleRefreshTokenGrant(TokenRequest request) {
+    // 1. Find the refresh token
+    Token oldRefresh = tokenRepo.findByJtiAndRevokedFalse(request.refreshToken())
+                                .orElseThrow(() -> invalidGrant());
+
+    // 2. Rotate: revoke old token
+    oldRefresh.setRevoked(true);
+    tokenRepo.save(oldRefresh);
+
+    // 3. Issue new pair
+    Token newAccess  = createAccessToken(oldRefresh.getClientId(), ...);
+    Token newRefresh = createRefreshToken(oldRefresh.getClientId(), ...);
+    tokenRepo.save(newAccess);
+    tokenRepo.save(newRefresh);
+
+    return TokenResponse.success(newAccess.getJti(), newRefresh.getJti(), ...);
+}
+```
+
+The transaction boundary ensures steps 2 and 3 are atomic: if step 3 fails, the old token is still revoked (no partial state).
+
+## Reuse Detection
+
+After rotation, the old refresh token is marked `revoked=true`. A subsequent request with that token:
+
+```
+Token oldRefresh = tokenRepo.findByJtiAndRevokedFalse(request.refreshToken())
+                        .orElseThrow(() -> invalidGrant());
+// → if revoked, findByJtiAndRevokedFalse returns empty → invalid_grant
+```
+
+This works because `findByJtiAndRevokedFalse` only returns tokens where `revoked=false`.
+
+## Blast Radius
+
+When reuse is detected, the server revokes both:
+1. The stolen token that the attacker used
+2. The replacement token that was just issued to the legitimate client
+
+This means the legitimate client loses its session and must re-authenticate. This is intentional — it forces the legitimate user to re-login when theft is detected, rather than silently continuing with a compromised session.
+
+## Refresh Token vs. Access Token
+
+| Token | Rotation | TTL | Purpose |
+|-------|----------|-----|---------|
+| Access token | Never rotated | 1 hour | Short-lived API authorization |
+| Refresh token | Rotated on every use | 7 days | Long-lived session continuation |
+
+## Verification
+
+```bash
+# Step 1 — get a refresh token (from Phase 2 auth code flow)
+# ...
+
+# Step 2 — first refresh → succeeds, new tokens issued
+curl -X POST http://localhost:8080/oauth2/token \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=<PREVIOUS_REFRESH_TOKEN>" \
+  -d "client_id=test-client" | jq .
+
+# Step 3 — second refresh with SAME old token → invalid_grant
+# (the token was already consumed)
+curl -X POST http://localhost:8080/oauth2/token \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=<PREVIOUS_REFRESH_TOKEN>" \
+  -d "client_id=test-client" | jq .
+# → {"error": "invalid_grant", ...}
+```

@@ -1,0 +1,151 @@
+---
+title: TOTP — RFC 6238
+
+---
+
+
+**RFC:** [6238](https://datatracker.ietf.org/doc/html/rfc6238)
+**Library:** [`dev.samstevens.totp`](https://github.com/samdj Stevens/totp) v1.7.1
+**Key files:** `backend/mfa/src/main/java/com/iam/mfa/service/TotpService.java`
+
+---
+
+## How TOTP Works
+
+TOTP generates a 6-digit code that changes every 30 seconds. The code is derived from:
+
+1. A shared secret (160-bit, Base32-encoded)
+2. The current Unix timestamp (rounded to 30-second steps)
+
+```
+TOTP = HOTP(Secret, floor(UnixTime / 30))
+```
+
+Where HOTP is HMAC-based One-Time Password (RFC 4226).
+
+**Algorithm:** HMAC-SHA1 (RFC 6238 default)
+**Digits:** 6
+**Period:** 30 seconds
+
+---
+
+## Enrollment Flow (RFC 6238 §5)
+
+```
+User                  App                     MFA Module
+  |                     |                           |
+  |-- POST /mfa/totp/setup (Bearer) ------------->|
+  |                     |   generate secret (160-bit)
+  |                     |   encrypt secret (AES-256-GCM)
+  |                     |   store unverified
+  |<-- 200: { provisioningUri, qrCodeImage } ----|
+  |                     |                           |
+  [User scans QR code in authenticator app]        |
+  |                     |                           |
+  |-- POST /mfa/totp/verify (code=123456) ------->|
+  |                     |   decrypt stored secret
+  |                     |   verify code against TOTP
+  |                     |   mark verified=true
+  |<-- 200: { verified: true } -------------------|
+```
+
+The first successful `verify` marks the credential as `verified=true`. After that, the user is considered MFA-enrolled.
+
+---
+
+## Secret Storage: AES-256-GCM
+
+TOTP secrets are stored encrypted at rest, not in plaintext.
+
+```
+AES-256-GCM encryption:
+  IV: 12 random bytes (generated fresh per encrypt)
+  Tag: 128-bit authentication tag
+  Key: 32-byte AES-256 key
+
+Stored format: IV || ciphertext (IV prepended to ciphertext)
+```
+
+**In production:** The AES key should be stored in a KMS (AWS KMS, HashiCorp Vault). In this demo it is a static 32-byte key in code — safe for demo only.
+
+```java
+byte[] keyBytes = "iam-demo-totp-enc-key-32bytes000".getBytes(); // exactly 32 bytes
+assert keyBytes.length == 32;
+SecretKeySpec encryptionKey = new SecretKeySpec(keyBytes, "AES");
+```
+
+---
+
+## QR Code — otpauth:// URI
+
+The provisioning URI follows the [Key URI Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format):
+
+```
+otpauth://totp/IAM%20Protocol%20Engine:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=IAM%20Protocol%20Engine&algorithm=SHA1&digits=6&period=30
+```
+
+The `dev.samstevens.totp` library generates this URI via `QrData`:
+
+```java
+QrData qrData = new QrData.Builder()
+    .secret(secret)
+    .issuer("IAM Protocol Engine")
+    .label(userId)
+    .algorithm(HashingAlgorithm.SHA1)
+    .digits(6)
+    .period(30)
+    .build();
+```
+
+The QR code PNG is generated with ZXing (`ZxingPngQrGenerator`) and returned as a Base64-encoded PNG in the setup response.
+
+---
+
+## Verification
+
+```java
+public boolean verify(String userId, String code) {
+    TotpCredential cred = totpRepo.findByUserId(userId).orElseThrow();
+    String secret = decrypt(cred.getSecretEncrypted());
+
+    boolean valid = codeVerifier.isValidCode(secret, code);
+
+    if (valid && !cred.getVerified()) {
+        cred.setVerified(true);
+        totpRepo.save(cred);
+    }
+    return valid;
+}
+```
+
+`CodeVerifier` from `dev.samstevens.totp` handles:
+- Time step calculation
+- HMAC-SHA1 computation
+- Time drift tolerance (allows ±1 period by default)
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE totp_credential (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id          VARCHAR(256) NOT NULL UNIQUE,
+    secret_encrypted BYTEA NOT NULL,   -- AES-256-GCM encrypted
+    verified         BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+`user_id` is the OAuth subject (`sub`). There is one TOTP credential per user.
+
+---
+
+## Security Notes
+
+- **Secret encrypted at rest** — plaintext secret never stored
+- **Random IV per encryption** — no IV reuse risk
+- **Verified flag** — prevents using a newly-set TOTP before confirmation
+- **6-digit code** — 1 in 10^6 chance of guessing per attempt; rate-limit login attempts independently
+- **Time-based, not counter-based** — no stateful counter to sync; relies on accurate clocks (NTP in production)

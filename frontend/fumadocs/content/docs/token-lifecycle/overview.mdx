@@ -1,0 +1,78 @@
+---
+title: Token Lifecycle
+---
+
+
+## Endpoints
+
+```
+# Refresh Rotation (RFC 6749 §6)
+POST /oauth2/token                    → new access_token + new refresh_token
+  (old refresh_token is atomically revoked)
+
+# Token Introspection (RFC 7662)
+POST /oauth2/introspect              → {active: true/false, sub, scope, exp...}
+
+# Token Revocation (RFC 7009)
+POST /oauth2/revoke                  → immediate token invalidation
+```
+
+## Refresh Token Rotation
+
+Refresh token rotation prevents replay attacks. If a refresh token is stolen and used, the legitimate client's refresh token is revoked, causing the attack to fail on the second use.
+
+```
+Client A (legitimate)                Server
+      │                                   │
+      │─────── use refresh_token A ──────>│
+      │                                   │ (old revoked, new issued)
+      │<─────── access + new refresh ────│
+      │                                   │
+Attacker                               │
+      │─────── use stolen refresh A ────>│
+      │                                   │ (already revoked)
+      │<─────── invalid_token ──────────│
+```
+
+**Atomic rotation.** The old refresh token is marked revoked in the same transaction that creates the new tokens. No window where both are valid.
+
+**Both active tokens revoked on abuse.** If a refresh token is reused, both the abused token and the newly-issued token are revoked. This limits the blast radius.
+
+## Introspection
+
+Token introspection (RFC 7662) lets authorized clients query whether a token is still valid:
+
+```
+POST /oauth2/introspect
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic <client_id:client_secret>
+
+token=<access_token>
+```
+
+Response:
+```json
+{
+  "active": true,
+  "sub": "user-123",
+  "scope": "openid profile email",
+  "exp": 1719003600,
+  "client_id": "test-client"
+}
+```
+
+**Introspection is a protected endpoint.** Only authorized clients (not any anonymous caller) can introspect tokens.
+
+## Revocation
+
+Token revocation (RFC 7009) immediately invalidates a token:
+
+```
+POST /oauth2/revoke
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic <client_id:client_secret>
+
+token=<refresh_token>
+```
+
+Revocation does not imply introspection — a revoked token returns `active=false` on introspection, but revocation does not automatically trigger introspection events.

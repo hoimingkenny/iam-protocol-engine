@@ -1,0 +1,60 @@
+---
+title: SAML 2.0 SP
+---
+
+
+## Overview
+
+Phase 7 implements a SAML 2.0 Service Provider (SP). Unlike the OAuth/OIDC flow where this server is the authorization authority, here it acts as a SP that initiates SSO with an external Identity Provider (IdP). After the IdP authenticates the user and returns a SAML assertion, this server validates it and issues standard OIDC tokens.
+
+## Protocol Flow (SP-Initiated SSO)
+
+```
+Browser                    IAM SP (this server)              IdP
+  │                               │                           │
+  │  GET /saml/initiate          │                           │
+  │─────────────────────────────>│                           │
+  │                              │  302 SAMLRequest           │
+  │                              │───────────────────────────>│
+  │                              │    (AuthnRequest signed)   │
+  │                              │                           │
+  │  302 (redirect to IdP)       │                           │
+  │<─────────────────────────────│                           │
+  │                              │                           │
+  │  [User authenticates]        │                           │
+  │                              │                           │
+  │  POST /saml/acs              │                           │
+  │  (SAMLResponse)              │                           │
+  │─────────────────────────────>│                           │
+  │                              │  Validate assertion        │
+  │                              │  Issue OIDC tokens         │
+  │                              │                           │
+  │  302 redirect_uri+tokens     │                           │
+  │<─────────────────────────────│                           │
+```
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/saml/initiate` | Initiate SAML SSO flow |
+| `GET` | `/saml/metadata` | SP metadata XML (for IdP registration) |
+| `POST` | `/saml/acs` | Assertion Consumer Service (IdP posts SAMLResponse here) |
+
+## Security Properties
+
+- **XML signatures:** RSA-SHA256 (JSR 105)
+- **Inclusive canonical XML (C14N):** Used for signature validation
+- **Replay protection:** Request ID stored in-memory with 5-min TTL
+- **Timing validation:** NotBefore/NotOnOrAfter checked against system time
+- **Audience restriction:** SP entityID must match
+- **PKCE note:** SAML does not use PKCE; XML signature provides equivalent assurance
+
+## SAML-OIDC Bridge
+
+After validating the SAML assertion, the SP maps the SAML `NameID` to an OAuth `sub` and issues standard OIDC tokens (access_token, refresh_token, id_token). This allows SAML-authenticated users to access OAuth/OIDC-protected resources.
+
+## Standards
+
+- [SAML 2.0](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf) — OASIS standard
+- [RFC 7523](https://www.rfc-editor.org/rfc/rfc7523) — SAML 2.0 Profile for OAuth 2.0 Client Authentication

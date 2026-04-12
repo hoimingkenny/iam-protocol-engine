@@ -1,0 +1,43 @@
+---
+title: SCIM 2.0
+---
+
+
+## Overview
+
+SCIM 2.0 (System for Cross-domain Identity Management, RFC 7643/7644) provides a structured way to manage users and groups in a directory, supporting the joiner/mover/leaver lifecycle common in enterprise identity management.
+
+## Endpoints
+
+```
+Client (Admin UI, SCIM-compatible IdP)
+    │
+    ├─ POST   /scim/v2/Users         → Create user  (joiner)
+    ├─ GET    /scim/v2/Users         → List users
+    ├─ GET    /scim/v2/Users/{uuid}    → Get user
+    ├─ PUT    /scim/v2/Users/{uuid}    → Replace user (mover)
+    ├─ DELETE /scim/v2/Users/{uuid}    → Delete user  (leaver)
+    │
+    ├─ POST   /scim/v2/Groups         → Create group
+    ├─ GET    /scim/v2/Groups         → List groups
+    ├─ GET    /scim/v2/Groups/{uuid}   → Get group
+    ├─ PATCH  /scim/v2/Groups/{uuid}    → Add/remove members (RFC 7644 §4.3)
+    └─ DELETE /scim/v2/Groups/{uuid}   → Delete group
+
+All endpoints require Bearer token authentication.
+```
+
+## RFCs Implemented
+
+- **RFC 7643** — SCIM Core Schema: User and Group resource types
+- **RFC 7644** — SCIM Protocol: REST API, filtering, PATCH operations
+
+## Key Design Decisions
+
+**Bearer token auth on all endpoints.** SCIM has no native auth mechanism — authentication is delegated to the hosting environment.
+
+**Entities in auth-core, not scim module.** `ScimUser` and `ScimGroup` JPA entities live in `auth-core` because they represent the canonical identity store. The `scim` module provides the SCIM protocol layer.
+
+**Comma-separated members.** Group membership is stored as a comma-separated string of UUIDs — consistent with the project's "no JSON arrays as column values" principle.
+
+**Filter parsing is simple.** Only single-condition `userName eq "..."` and `displayName eq "..."` are implemented.

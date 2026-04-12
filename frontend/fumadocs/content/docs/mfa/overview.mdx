@@ -1,0 +1,61 @@
+---
+title: Modern Auth (MFA)
+---
+
+
+## TOTP (RFC 6238)
+
+Time-based One-Time Passwords add a second authentication factor. The server generates a shared secret, the user registers it in an authenticator app, and subsequently proves possession of the device.
+
+**Setup flow:**
+```
+POST /mfa/totp/setup    → generates secret + QR code (Bearer token auth)
+GET  /mfa/totp/status   → check if TOTP enrolled
+POST /mfa/totp/verify   → verify 6-digit code (Bearer token auth)
+```
+
+**Security:** TOTP secrets are encrypted with AES-256-GCM at rest.
+
+## WebAuthn / FIDO2
+
+Passwordless authentication using platform authenticators (YubiKey, Touch ID, Windows Hello). The browser and server exchange challenges in a cryptographic ceremony that never leaves a shared secret on the server.
+
+**Registration:**
+```
+POST /webauthn/register/begin    → server challenge + options
+POST /webauthn/register/complete → credential created
+```
+
+**Authentication:**
+```
+POST /webauthn/authenticate/begin    → server challenge
+POST /webauthn/authenticate/complete → validated
+```
+
+**Security properties:**
+- Challenge is generated fresh per ceremony, stored in memory only
+- `sign_count` increments on each use (anti-cloning)
+- Private key never leaves the authenticator
+
+## Device Authorization Grant (RFC 8628)
+
+For browser-less devices (smart TVs, CLI tools) where the user cannot type a password. The device shows a short code and URL; the user approves on a separate device.
+
+```
+Device                              Authorization Server
+  │                                        │
+  │──── POST /device_authorization ──────>│
+  │       (client_id, scope)               │
+  │<─── device_code + user_code ──────────│
+  │                                        │
+  │    [User visits URL, enters user_code] │
+  │                                        │
+  │──── POST /oauth2/token ───────────────>│
+  │       grant_type=device_code           │
+  │       device_code=...                 │
+  │                                        │
+  │    (polls until user approves)         │
+  │<─── access_token ─────────────────────│
+```
+
+**Device code TTL:** 10 minutes (RFC 8628 §4.5 recommendation)

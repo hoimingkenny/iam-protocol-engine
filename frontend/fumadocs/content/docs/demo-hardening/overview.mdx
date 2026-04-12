@@ -1,0 +1,53 @@
+---
+title: Demo Hardening
+---
+
+
+## Demo Script
+
+The end-to-end demo script (`scripts/demo-e2e.sh`) exercises all protocols in sequence:
+
+```bash
+./scripts/demo-e2e.sh
+```
+
+Sections cover: Docker/PostgreSQL setup, OAuth 2.0 Auth Code + PKCE, OIDC Discovery + JWKS, ID Token verification, Token introspection and revocation, SCIM user provisioning, SAML SP-initiated SSO, TOTP MFA enrollment, and WebAuthn registration.
+
+## Architecture
+
+The system is structured as a Maven multi-module Spring Boot application with protocol-specific modules:
+
+```
+backend/
+├── auth-core/        ← JPA entities, repositories
+├── oauth-oidc/       ← /authorize, /token, OIDC endpoints
+├── saml-federation/  ← SAML SP + SAML→OIDC bridge
+├── scim/             ← SCIM /Users, /Groups
+├── mfa/              ← TOTP, WebAuthn
+├── device-flow/       ← RFC 8628 device flow
+├── demo-resource/    ← Protected sample API
+└── api-gateway/      ← Entry point
+```
+
+## Protocol Coverage
+
+This project demonstrates all major enterprise IAM protocols:
+
+| Protocol | RFC | Location |
+|----------|-----|----------|
+| OAuth 2.0 Auth Code + PKCE | RFC 6749, RFC 7636 | `oauth-oidc/` |
+| OAuth 2.0 Client Credentials | RFC 6749 §4.2 | `oauth-oidc/` |
+| Token Introspection | RFC 7662 | `oauth-oidc/` |
+| Token Revocation | RFC 7009 | `oauth-oidc/` |
+| OIDC Discovery | RFC 8414 | `oauth-oidc/` |
+| JWKS + Key Rotation | RFC 7517 | `oauth-oidc/` |
+| ID Token (RS256 JWT) | OIDC Core | `oauth-oidc/` |
+| /userinfo | OIDC Core §5.3 | `oauth-oidc/` |
+| SCIM /Users CRUD | RFC 7644 §5.2 | `scim/` |
+| SCIM /Groups CRUD + PATCH | RFC 7644 §5.3 | `scim/` |
+| SAML SP Metadata + AuthnRequest | SAML 2.0 | `saml-federation/` |
+| SAML ACS + Assertion Validation | SAML 2.0 | `saml-federation/` |
+| SAML → OIDC Bridge | RFC 7523 | `saml-federation/` |
+| TOTP MFA | RFC 6238 | `mfa/` |
+| WebAuthn / FIDO2 | W3C WebAuthn | `mfa/` |
+| Device Authorization Grant | RFC 8628 | `device-flow/` |
