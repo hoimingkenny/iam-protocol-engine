@@ -1293,19 +1293,46 @@ Phase 7 SAML collection includes:
 
 ---
 
+#### Task 37: Docusaurus → Fumadocs Static Content Migration
+
+**Description:** Migrate selected static content from the Docusaurus site (`frontend/app/docs/`) into Fumadocs (`frontend/fumadocs/content/`). This is static content migration only — protocol explainers, reference docs, and narrative chapters that benefit from Fumadocs' MDX support and Next.js rendering, distinct from the interactive flow explorer (Task 34) and OpenAPI reference (Task 35).
+
+**Acceptance criteria:**
+- [x] Migrated content is selected based on content type fit — static reference, protocol explainers, and narrative chapters migrate; interactive flow labs and API explorers remain their own deliverables (Tasks 34/35)
+- [x] All migrated content builds successfully under `npm run build` in `frontend/fumadocs/`
+- [x] Migrated pages are integrated into Fumadocs navigation and accessible via the docs sidebar
+- [x] Docusaurus source content is preserved in `frontend/app/docs/` for reference (not deleted)
+- [x] A migration audit doc records what was migrated, what was adapted, and what remains Docusaurus-only
+- [x] Cross-links from Docusaurus to Fumadocs are added where the Fumadocs version is the canonical reference
+
+**Verification:** `cd frontend/fumadocs && npm run build` succeeds; migrated pages render correctly and navigation reflects new content; migration audit doc exists in `doc/`.
+
+**Dependencies:** Tasks 33
+
+**Files:**
+- `frontend/fumadocs/content/**`
+- `frontend/app/docs/**` (preserved, not deleted)
+- `doc/11_P11_MIGRATION_AUDIT.md`
+
+**Estimated scope:** M
+
+---
+
 ### Phase 11 Suggested Task Branches
 
 - `phase-11-task-33-fumadocs-scaffold`
 - `phase-11-task-34-interactive-flow-lab`
 - `phase-11-task-35-openapi-reference`
 - `phase-11-task-36-dual-site-deployment`
+- `phase-11-task-37-docusaurus-fumadocs-migration`
 
 ---
 
 ### Checkpoint: Phase 11
 
-- [ ] Docusaurus remains intact as the long-form documentation site
-- [ ] A new Fumadocs app exists in `frontend/fumadocs/`
+- [x] Docusaurus remains intact as the long-form documentation site
+- [x] A new Fumadocs app exists in `frontend/fumadocs/`
+- [x] Static content migrated from Docusaurus (reference docs, phase overviews)
 - [ ] Interactive OAuth/OIDC flow explorer works against the existing backend
 - [ ] API reference experience proves the value of Fumadocs beyond static content
 - [ ] Dual-site information architecture and deployment guidance are documented
@@ -1325,6 +1352,8 @@ Phase 7 SAML collection includes:
 | `OIDC Login Explorer` | Existing Phase 3 docs and discovery/token payloads |
 | `API Reference` | OpenAPI-backed endpoint reference for selected flows |
 | `Dual-Site Navigation` | Cross-links between Docusaurus docs and Fumadocs interactive docs |
+| `Reference Docs` | Migrated Spec, System Architecture, Learning Notes |
+| `Phase Overviews` | Migrated P1–P9 narrative summaries |
 
 ---
 

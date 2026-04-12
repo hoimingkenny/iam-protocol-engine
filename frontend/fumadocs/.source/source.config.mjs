@@ -10,16 +10,7 @@ var docs = defineDocs({
     schema: metaSchema
   }
 });
-var source_config_default = defineConfig({
-  mdxOptions: {
-    rehypeCodeOptions: {
-      themes: {
-        light: "github-light",
-        dark: "github-dark"
-      }
-    }
-  }
-});
+var source_config_default = defineConfig({});
 export {
   source_config_default as default,
   docs
