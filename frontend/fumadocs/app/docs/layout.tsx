@@ -11,7 +11,7 @@ const pageTree = {
     },
     {
       type: 'page' as const,
-      name: 'Why This Project',
+      name: 'Overview',
       url: '/docs/introduction/why-this-project',
     },
     {
@@ -44,6 +44,10 @@ const pageTree = {
           url: '/docs/bootstrap/tests',
         },
       ],
+    },
+    {
+      type: 'separator' as const,
+      name: 'Protocol',
     },
     {
       type: 'folder' as const,
@@ -125,22 +129,6 @@ const pageTree = {
     },
     {
       type: 'folder' as const,
-      name: 'Admin UI',
-      children: [
-        {
-          type: 'page' as const,
-          name: 'Login Flow',
-          url: '/docs/admin-ui/login-flow',
-        },
-        {
-          type: 'page' as const,
-          name: 'Admin API',
-          url: '/docs/admin-ui/admin-api',
-        },
-      ],
-    },
-    {
-      type: 'folder' as const,
       name: 'SCIM 2.0',
       children: [
         {
@@ -183,7 +171,7 @@ const pageTree = {
     },
     {
       type: 'folder' as const,
-      name: 'Modern Auth (MFA)',
+      name: 'MFA',
       children: [
         {
           type: 'page' as const,
@@ -199,6 +187,26 @@ const pageTree = {
           type: 'page' as const,
           name: 'Device Flow',
           url: '/docs/mfa/device-flow',
+        },
+      ],
+    },
+    {
+      type: 'separator' as const,
+      name: 'Other',
+    },
+    {
+      type: 'folder' as const,
+      name: 'Admin UI',
+      children: [
+        {
+          type: 'page' as const,
+          name: 'Login Flow',
+          url: '/docs/admin-ui/login-flow',
+        },
+        {
+          type: 'page' as const,
+          name: 'Admin API',
+          url: '/docs/admin-ui/admin-api',
         },
       ],
     },
