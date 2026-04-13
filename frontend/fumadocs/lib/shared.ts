@@ -1,4 +1,4 @@
-export const appName = 'IAM Docs Studio';
+export const appName = 'Docstash';
 export const docsRoute = '/docs';
 export const studioRoute = '/studio';
 export const defaultBackendBaseUrl =

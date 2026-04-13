@@ -17,8 +17,11 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Documentation",
-    template: "%s | Documentation",
+    default: "Docstash",
+    template: "%s | Docstash",
+  },
+  icons: {
+    icon: "/docstash-logo.svg",
   },
   description:
     "Interactive OAuth and OIDC study workspace built with Fumadocs, Next.js, and the IAM Protocol Engine backend.",
