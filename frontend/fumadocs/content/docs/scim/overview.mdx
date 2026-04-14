@@ -1,43 +1,353 @@
 ---
-title: SCIM 2.0
+title: SCIM 2.0 Overview
 ---
 
+## What is SCIM?
 
-## Overview
+SCIM 2.0 (System for Cross-domain Identity Management, RFC 7643/7644) is a REST API standard for managing users and groups in a directory. It is the dominant protocol for Identity Provider (IdP) to Service Provider (SP) identity provisioning — think Okta/Auth0/Azure AD syncing users to SaaS apps.
 
-SCIM 2.0 (System for Cross-domain Identity Management, RFC 7643/7644) provides a structured way to manage users and groups in a directory, supporting the joiner/mover/leaver lifecycle common in enterprise identity management.
+The core value: a **standard wire format** so any SCIM-compatible client can manage identities without custom integrations.
+
+## Why SCIM 2.0 in a Provisioning Flow?
+
+Before SCIM, provisioning was a **custom integration nightmare**:
+
+```
+HR System (Workday) → Custom connector → Salesforce      ← Unique per vendor
+HR System (Workday) → Custom connector → ServiceNow       ← Unique per vendor
+HR System (Workday) → Custom connector → AWS IAM          ← Unique per vendor
+... dozens more
+```
+
+Every vendor had its own user schema, its own API shape, its own attribute names. Identity teams wrote and maintained **N×M integrations** (N apps × M identity sources). A new SaaS app meant a 6-week integration project.
+
+### SCIM's Value Proposition
+
+SCIM collapses this to a **single, standard interface per target system**:
+
+```
+HR System (any) → SCIM 2.0 → Target System (any SCIM-compliant app)
+                         ↑
+              Universal adapter: SailPoint, Okta, Azure AD
+```
+
+| Problem | Before SCIM | With SCIM |
+|---------|-------------|-----------|
+| Schema mapping | Custom per vendor | Standard — `userName`, `displayName`, `emails` are universal |
+| API shape | Custom per vendor | REST + JSON — same patterns everywhere |
+| Auth | Custom per vendor | Bearer token (OAuth2) — same everywhere |
+| Delta sync | Custom polling logic | `lastModified` timestamp + `active` flag |
+| Offboarding | Custom process | Soft deactivate (`active: false`) — standard |
+| Conflict detection | Custom logic | 409 Conflict with standard error body |
+
+### Real Apps That Speak SCIM
+
+These are just a selection — most modern SaaS platforms support SCIM out of the box:
+
+| App | SCIM Use Case |
+|-----|---------------|
+| **Salesforce** | Provision users + assign permission sets via SCIM |
+| **Workday** | Acts as SCIM provider to downstream apps |
+| **Slack** | Provision members, manage workspaces, sync `userName` → Slack handle |
+| **Zoom** | Auto-provision users, sync display name, deprovision on offboard |
+| **GitHub** | Organization membership, team assignment (via SCIM 2.0 beta) |
+| **Microsoft 365 / Azure AD** | Full user/group sync across the M365 ecosystem |
+| **ServiceNow** | ITSM user provisioning, group-based role assignment |
+| **Splunk** | User provisioning for analytics platform roles |
+| **Datadog** | Team provisioning and RBAC sync |
+| **AWS IAM Identity Center** | Federation + SCIM-based user/group sync to AWS accounts |
+| **Okta** | Acts as SCIM provider AND SCIM client (双向 SCIM) |
+| **Azure AD (Entra)** | SCIM 2.0 provisioning to thousands of SaaS apps |
+
+### The Key Insight: Schema Normalization at the IdP
+
+The IdP (SailPoint, Okta, etc.) owns the **semantic transformation**:
+
+```
+Workday says:  employeeType = "FTE", costCenter = "CC-12345", managerId = "WD-00001"
+SailPoint transforms → SCIM standard attributes:
+  → userName = "jane.smith"
+  → department = "Engineering"        (from HR cost center mapping)
+  → title = "Senior Engineer"        (from HR job title)
+  → emails[0].value = "jane@corp.com"
+```
+
+This means the **target system only needs to speak SCIM** — it doesn't need to understand Workday, SAP, or any specific HCM. The IdP handles all the complexity of mapping from whatever the HR system calls things into standard SCIM attribute names.
+
+### SCIM Is the Common Denominator
+
+```
+Target apps only need to implement ONE standard interface
+rather than N different vendor-specific connectors.
+```
+
+For the IAM Protocol Engine, being a SCIM provider means:
+- Any SCIM-compatible IdP (SailPoint, Okta, Azure AD, JumpCloud, Gluu, etc.) can provision users/groups into it
+- No per-vendor custom code needed on the target side
+- Federation becomes "speak SCIM" — not "build a custom connector for every IdP"
+
+## Joiner / Mover / Leaver Lifecycle
+
+```
+Joiner   → POST   /scim/v2/Users        # New employee joins
+Mover    → PUT    /scim/v2/Users/{id}    # Employee changes role/department
+Leaver   → DELETE /scim/v2/Users/{id}    # Employee departs
+
+Group changes via PATCH /scim/v2/Groups/{id}
+```
 
 ## Endpoints
 
 ```
 Client (Admin UI, SCIM-compatible IdP)
     │
-    ├─ POST   /scim/v2/Users         → Create user  (joiner)
-    ├─ GET    /scim/v2/Users         → List users
-    ├─ GET    /scim/v2/Users/{uuid}    → Get user
-    ├─ PUT    /scim/v2/Users/{uuid}    → Replace user (mover)
-    ├─ DELETE /scim/v2/Users/{uuid}    → Delete user  (leaver)
+    ├── Users
+    │   ├── POST   /scim/v2/Users         Create user   (joiner)
+    │   ├── GET    /scim/v2/Users         List users    (with filter, pagination)
+    │   ├── GET    /scim/v2/Users/{uuid}  Get user
+    │   ├── PUT    /scim/v2/Users/{uuid}  Replace user  (mover)
+    │   └── DELETE /scim/v2/Users/{uuid}  Delete user   (leaver)
     │
-    ├─ POST   /scim/v2/Groups         → Create group
-    ├─ GET    /scim/v2/Groups         → List groups
-    ├─ GET    /scim/v2/Groups/{uuid}   → Get group
-    ├─ PATCH  /scim/v2/Groups/{uuid}    → Add/remove members (RFC 7644 §4.3)
-    └─ DELETE /scim/v2/Groups/{uuid}   → Delete group
+    ├── Groups
+    │   ├── POST   /scim/v2/Groups         Create group
+    │   ├── GET    /scim/v2/Groups         List groups
+    │   ├── GET    /scim/v2/Groups/{uuid}  Get group
+    │   ├── PATCH  /scim/v2/Groups/{uuid}  Modify members (add/remove)
+    │   └── DELETE /scim/v2/Groups/{uuid}  Delete group
+    │
+    └── Both resources support:
+        • ?filter=userName eq "..." or displayName eq "..."
+        • ?startIndex=1&count=10  (pagination, 1-based)
+        • Location header on create (RFC 7644 §5.2)
+        • Bearer token auth on all requests
+```
 
-All endpoints require Bearer token authentication.
+## Resource Types
+
+### User (RFC 7643 §5.1)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "userName": "john.doe",
+  "displayName": "John Doe",
+  "name": { "givenName": "John", "familyName": "Doe" },
+  "emails": [{ "value": "john@example.com", "primary": true }],
+  "active": true,
+  "groups": [],
+  "meta": {
+    "resourceType": "User",
+    "created": "2026-04-14T10:00:00Z",
+    "lastModified": "2026-04-14T10:00:00Z",
+    "location": "http://localhost:8080/scim/v2/Users/550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+### Group (RFC 7643 §5.2)
+
+```json
+{
+  "id": "661f9500-f39c-52e5-b827-557866551111",
+  "displayName": "Engineering",
+  "members": [
+    { "value": "550e8400-e29b-41d4-a716-446655440000", "type": "User" }
+  ],
+  "meta": {
+    "resourceType": "Group",
+    "created": "2026-04-14T10:05:00Z",
+    "lastModified": "2026-04-14T10:05:00Z",
+    "location": "http://localhost:8080/scim/v2/Groups/661f9500-f39c-52e5-b827-557866551111"
+  }
+}
+```
+
+## Authentication
+
+All SCIM endpoints require a `Bearer` token in the `Authorization` header. SCIM itself does not define an authentication mechanism — the hosting environment handles it. This implementation validates the token against the `token` table (same as OAuth 2.0 resource protection).
+
+```
+Authorization: Bearer <access_token>
 ```
 
 ## RFCs Implemented
 
-- **RFC 7643** — SCIM Core Schema: User and Group resource types
-- **RFC 7644** — SCIM Protocol: REST API, filtering, PATCH operations
+| RFC | Title | Coverage |
+|-----|-------|----------|
+| RFC 7643 | SCIM Core Schema | User and Group resource types, attribute definitions |
+| RFC 7644 | SCIM Protocol | REST API, filtering, PATCH operations, error responses |
 
 ## Key Design Decisions
 
-**Bearer token auth on all endpoints.** SCIM has no native auth mechanism — authentication is delegated to the hosting environment.
+**Bearer token auth on all endpoints.** SCIM has no native auth mechanism — authentication is delegated to the hosting environment. Tokens are validated via the same `TokenRepository` used by OAuth 2.0.
 
-**Entities in auth-core, not scim module.** `ScimUser` and `ScimGroup` JPA entities live in `auth-core` because they represent the canonical identity store. The `scim` module provides the SCIM protocol layer.
+**Entities in auth-core, not scim module.** `ScimUser` and `ScimGroup` JPA entities live in `auth-core` because they represent the canonical identity store. The `scim` module provides only the SCIM protocol layer (controller + DTOs).
 
-**Comma-separated members.** Group membership is stored as a comma-separated string of UUIDs — consistent with the project's "no JSON arrays as column values" principle.
+**Comma-separated members.** Group membership is stored as a comma-separated string of UUIDs on the `ScimGroup` entity — consistent with the project's "no JSON columns for simple arrays" principle.
 
-**Filter parsing is simple.** Only single-condition `userName eq "..."` and `displayName eq "..."` are implemented.
+**Filter parsing is simple.** Only single-condition `userName eq "..."` and `displayName eq "..."` are implemented. Full SCIM filter grammar (RFC 7644 §3) is not in scope.
+
+**PATCH is idempotent for add.** Adding the same user twice to a group is a no-op due to Set deduplication before persist.
+
+## Error Responses
+
+SCIM uses HTTP status codes with a consistent error body (RFC 7644 §4.4):
+
+```json
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"],
+  "status": 400,
+  "detail": "userName is required"
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| 201 | Resource created (POST) |
+| 200 | Success (GET, PUT, PATCH) |
+| 204 | No Content (DELETE) |
+| 400 | Bad Request — validation failed |
+| 401 | Unauthorized — invalid/missing token |
+| 404 | Not Found |
+| 409 | Conflict — unique constraint violation |
+
+## Real-World Flow: SailPoint → SCIM → Target System
+
+In enterprise identity governance, a SCIM请求 flows like this:
+
+```
+┌──────────────┐         SCIM v2 (RFC 7644)          ┌──────────────────┐
+│   SailPoint   │ ────── Provisioning Agent ─────────→│  IAM Protocol    │
+│   (IdP/IGA)   │                                      │  Engine          │
+│              │ ←──── Access Token (OAuth2) ──────────│                  │
+└──────────────┘                                      └────────┬─────────┘
+                                                               │
+                                                               │ PostgreSQL
+                                                               │ writes to
+                                                               ▼
+                                                    ┌──────────────────┐
+                                                    │  Target System   │
+                                                    │  (Workday, SF,   │
+                                                    │   ServiceNow)    │
+                                                    └──────────────────┘
+```
+
+### Step-by-Step: New Hire Provisioning
+
+**Step 1 — IT initiates hire in Workday** (or any HCM system). SailPoint picks up the event via connector.
+
+**Step 2 — SailPoint evaluates access policies**
+```
+Rule: "All Engineering employees get GitHub org membership + AWS read-only"
+  → Applies to: user.department == "Engineering"
+```
+
+**Step 3 — SailPoint sends SCIM create request to IAM Protocol Engine**
+
+```
+POST /scim/v2/Users
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...
+Content-Type: application/json
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "jane.smith",
+  "displayName": "Jane Smith",
+  "name": {
+    "givenName": "Jane",
+    "familyName": "Smith"
+  },
+  "emails": [{ "value": "jane.smith@example.com", "primary": true }],
+  "active": true,
+  "externalId": "WD-2026-00442"    ← Workday's unique ID (SailPoint tracks this)
+}
+```
+
+**Step 4 — IAM Protocol Engine persists to PostgreSQL**
+
+```java
+@PostMapping("/Users")
+public Object createUser(@RequestBody ScimUserDto dto,
+                         @RequestHeader("Authorization") String auth) {
+    // validate Bearer token
+    // check userName uniqueness → 409 if conflict
+    // persist to scim_user table
+    // return 201 + Location header
+}
+```
+
+**Step 5 — IAM Protocol Engine responds to SailPoint**
+
+```
+HTTP/1.1 201 Created
+Location: http://localhost:8080/scim/v2/Users/7c9e6679-7425-40de-944b-e07fc1f90ae7
+Content-Type: application/json
+
+{
+  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "userName": "jane.smith",
+  "displayName": "Jane Smith",
+  "meta": {
+    "resourceType": "User",
+    "created": "2026-04-14T10:00:00Z",
+    "lastModified": "2026-04-14T10:00:00Z",
+    "location": "http://localhost:8080/scim/v2/Users/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+**Step 6 — SailPoint maps the SCIM `id` to its internal provisioning record**
+
+SailPoint stores `externalId = WD-2026-00442` (Workday ID) and `id = 7c9e6679...` (IAM Protocol Engine ID). On future updates/deletions, SailPoint uses the IAM Protocol Engine `id` as the SCIM `id`.
+
+### Group Provisioning: SailPoint → IAM Protocol Engine → Target Groups
+
+**Step 7 — SailPoint assigns group membership**
+
+SailPoint computes group membership based on HR attribute (`department`, `manager`, `costCenter`). For the "Engineering" group:
+
+```
+PATCH /scim/v2/Groups/661f9500-f39c-52e5-b827-557866551111
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...
+Content-Type: application/json
+
+[
+  { "op": "add", "members": [{ "value": "7c9e6679-7425-40de-944b-e07fc1f90ae7" }] }
+]
+```
+
+**Step 8 — IAM Protocol Engine updates group membership**
+
+Group membership stored as comma-separated UUIDs in PostgreSQL: `"7c9e6679-7425..., other-uuid-here"`
+
+### Offboarding: SailPoint → Deactivate User
+
+When Jane leaves (HR system fires event → SailPoint detects it):
+
+```
+PUT /scim/v2/Users/7c9e6679-7425-40de-944b-e07fc1f90ae7
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "jane.smith",
+  "active": false          ← Soft deactivate (not DELETE)
+}
+```
+
+The user record is retained (not hard-deleted) for audit purposes. SailPoint also pushes the deactivation to all target systems (Workday, AWS, GitHub, etc.) through their respective provisioning agents.
+
+### Why This Architecture Works
+
+| Concern | How SailPoint handles it |
+|---------|--------------------------|
+| **Credential sync** | SailPoint generates/rotates passwords for target apps via its credential vault |
+| **Role-to-group mapping** | Policy engine evaluates on every identity event, not just at provisioning |
+| **Conflict resolution** | If `userName` already exists → 409 → SailPoint retries as update |
+| **Audit trail** | SailPoint logs every provisioning decision; IAM Protocol Engine logs every SCIM call |
+| **Delta sync** | SCIM PATCH avoids full replacement; only changed attributes sent |
+
+## See Also
+
+- [SCIM /Users CRUD](/docs/scim/users) — Full endpoint reference for User resources
+- [SCIM /Groups + Membership](/docs/scim/groups) — Full endpoint reference for Group resources

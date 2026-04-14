@@ -133,6 +133,16 @@ const pageTree = {
       children: [
         {
           type: 'page' as const,
+          name: 'Overview',
+          url: '/docs/scim/overview',
+        },
+        {
+          type: 'page' as const,
+          name: 'SailPoint Connector',
+          url: '/docs/scim/sailpoint-connector',
+        },
+        {
+          type: 'page' as const,
           name: 'Users',
           url: '/docs/scim/users',
         },
