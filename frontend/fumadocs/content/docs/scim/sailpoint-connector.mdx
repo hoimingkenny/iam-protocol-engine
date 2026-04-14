@@ -1,0 +1,237 @@
+---
+title: SailPoint SCIM 2.0 Connector
+---
+
+SailPoint IdentityNow uses a **SCIM 2.0 connector** as its provisioning agent to push identity changes to target systems. Rather than writing a custom connector per target, SailPoint ships a SCIM provider integration — the target just needs to expose a SCIM 2.0 API.
+
+This page explains how SailPoint acts as a **SCIM client** and what it expects from a SCIM 2.0 server (like the IAM Protocol Engine).
+
+## SailPoint as SCIM Client
+
+```
+┌──────────────────┐     SCIM 2.0 (RFC 7644)     ┌─────────────────────┐
+│  SailPoint        │ ──────────────────────────→ │  IAM Protocol       │
+│  IdentityNow      │                             │  Engine             │
+│                  │ ←────────────────────────── │  (SCIM Server)      │
+│  Provisioning     │     Bearer token auth        │                    │
+│  Agent            │                             │                    │
+└──────────────────┘                             └────────────────────┘
+```
+
+SailPoint sends CRUD requests (CREATE, READ, UPDATE, DELETE) to the target system's SCIM endpoints. The target system returns standard SCIM responses.
+
+SailPoint sends CRUD requests (CREATE, READ, UPDATE, DELETE) to the target system's SCIM endpoints. The target system returns standard SCIM responses.
+
+## Connector Configuration in SailPoint
+
+### Base URL
+
+```
+SCIM endpoint base: https://iam-engine.example.com/scim/v2
+```
+
+### Authentication
+
+SailPoint uses **OAuth 2.0 Bearer tokens** to authenticate to the SCIM server. The token is obtained from the target's OAuth 2.0 `/token` endpoint.
+
+```
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJzc2ltLWNsaWVudCJ9...
+```
+
+### Account Schema Mapping
+
+SailPoint maps its internal identity attributes to SCIM standard attributes. The mapping is configurable in the SailPoint connector UI.
+
+| SailPoint Attribute | SCIM 2.0 Attribute | Notes |
+|--------------------|--------------------|-------|
+| `displayName` | `displayName` | Direct mapping |
+| `email` | `emails[0].value` | Primary email |
+| `employeeType` | `userType` or in `attributes` | Non-standard extension |
+| `department` | `department` | Non-standard extension |
+| `manager` | via group membership | SailPoint uses groups for managerial hierarchy |
+| `costCenter` | in `attributes` (JSONB) | Non-standard, stored as extension |
+
+### Filtering Support
+
+SailPoint can query users/groups using SCIM filter syntax:
+
+```
+GET /scim/v2/Users?filter=userName eq "jane.smith"
+GET /scim/v2/Groups?filter=displayName eq "Engineering"
+```
+
+Supported SCIM operators: `eq`, `co` (contains), `sw` (starts with).
+
+## SailPoint Provisioning Lifecycle
+
+### Create Account (Joiner)
+
+SailPoint sends a CREATE request when a new identity is provisioned to the target system.
+
+```
+POST /scim/v2/Users
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "jane.smith",
+  "displayName": "Jane Smith",
+  "name": {
+    "givenName": "Jane",
+    "familyName": "Smith"
+  },
+  "emails": [{ "value": "jane.smith@example.com", "primary": true }],
+  "active": true,
+  "externalId": "SP-001234"        ← SailPoint's internal ID
+}
+```
+
+SailPoint expects a **201 Created** response with a `Location` header containing the SCIM resource's canonical URL. SailPoint stores both:
+- `externalId` → its own provisioning record ID
+- `id` (from Location) → the target system's SCIM ID for subsequent updates/deletes
+
+### Enable/Disable Account (Mover/Leaver)
+
+SailPoint does not send DELETE for offboarding. Instead, it sends an UPDATE to set `active: false`.
+
+```
+PUT /scim/v2/Users/7c9e6679-7425-40de-944b-e07fc1f90ae7
+Authorization: Bearer <token>
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "jane.smith",
+  "active": false         ← Soft deactivate
+}
+```
+
+This is the **leaver flow** — the account is deactivated but retained for audit purposes. The target system should not hard-delete the record.
+
+### Delete Account
+
+For systems that require hard deletion (not soft deactivate), SailPoint sends:
+
+```
+DELETE /scim/v2/Users/7c9e6679-7425-40de-944b-e07fc1f90ae7
+Authorization: Bearer <token>
+```
+
+SailPoint expects **204 No Content** on success.
+
+### Group Provisioning
+
+SailPoint uses PATCH with `add`/`remove` operations to manage group membership:
+
+```
+PATCH /scim/v2/Groups/661f9500-f39c-52e5-b827-557866551111
+Authorization: Bearer <token>
+
+[
+  { "op": "add", "members": [{ "value": "7c9e6679-7425-40de-944b-e07fc1f90ae7" }] }
+]
+```
+
+## IAM Protocol Engine SCIM Compliance for SailPoint
+
+To work correctly with SailPoint, the IAM Protocol Engine SCIM server must implement:
+
+### Required
+
+| Requirement | RFC Section | Status |
+|-------------|-------------|--------|
+| `POST /scim/v2/Users` → 201 + Location | RFC 7644 §5.2 | ✅ Implemented |
+| `GET /scim/v2/Users/{id}` → 200 + User | RFC 7644 §5.1 | ✅ Implemented |
+| `PUT /scim/v2/Users/{id}` → 200 + User | RFC 7644 §5.5 | ✅ Implemented |
+| `DELETE /scim/v2/Users/{id}` → 204 | RFC 7644 §5.6 | ✅ Implemented |
+| `PATCH /scim/v2/Groups/{id}` for membership | RFC 7644 §4.3 | ✅ Implemented |
+| Bearer token authentication | RFC 7644 §5.3 | ✅ Implemented |
+| Error responses with `schemas`, `status`, `detail` | RFC 7644 §4.4 | ✅ Implemented |
+
+### Recommended
+
+| Requirement | Notes |
+|-------------|-------|
+| `externalId` passthrough | SailPoint uses `externalId` to track its own ID |
+| `lastModified` in User/Group `meta` | SailPoint uses this for delta detection |
+| `Location` header on create/update | SailPoint stores this for subsequent operations |
+| 409 Conflict on duplicate `userName` | SailPoint handles this gracefully |
+
+## Configuration in IdentityNow
+
+### Step 1 — Create a SCIM Provisioning Target
+
+In SailPoint IdentityNow admin:
+
+1. Go to **Provisioning** → **Targets** → **Create Target**
+2. Select type: **SCIM 2.0**
+3. Enter base URL: `https://iam-engine.example.com/scim/v2`
+4. Configure authentication:
+   - **Auth Type**: OAuth 2.0
+   - **Token URL**: `https://iam-engine.example.com/oauth2/token`
+   - **Client ID**: `sailpoint-scim-client`
+   - **Client Secret**: `***`
+
+### Step 2 — Map Identity Attributes
+
+Map SailPoint identity attributes to SCIM schema:
+
+```
+ SailPoint               SCIM 2.0
+─────────────           ──────────
+identity.displayName  → displayName
+identity.email        → emails[0].value
+identity.department   → department (extension)
+identity.employeeType → userType (extension)
+```
+
+### Step 3 — Configure Lifecycle Operations
+
+| Operation | SailPoint Action |
+|-----------|-----------------|
+| Create account | `POST /scim/v2/Users` |
+| Enable account | `PUT /scim/v2/Users/{id}` with `active: true` |
+| Disable account | `PUT /scim/v2/Users/{id}` with `active: false` |
+| Delete account | `DELETE /scim/v2/Users/{id}` |
+| Add to group | `PATCH /scim/v2/Groups/{id}` with `op: add` |
+| Remove from group | `PATCH /scim/v2/Groups/{id}` with `op: remove` |
+
+## Troubleshooting
+
+### 401 Unauthorized
+
+**Symptom**: SailPoint gets 401 on all requests.
+
+**Cause**: The access token is expired or invalid.
+
+**Fix**: Check that the `sailpoint-scim-client` OAuth client is configured in the IAM Protocol Engine and that the token endpoint returns valid tokens.
+
+### 400 Bad Request — "userName is required"
+
+**Symptom**: SailPoint sends a CREATE with a `userName` that fails validation.
+
+**Cause**: SailPoint sends `userName` — confirm this field is being parsed correctly. The IAM Protocol Engine requires `userName` to be non-blank.
+
+**Fix**: Check the SCIM payload — SailPoint may be sending `userName` as `null` for some identity types. Configure the attribute mapping in SailPoint.
+
+### 409 Conflict — userName already exists
+
+**Symptom**: SailPoint retries a CREATE but the user already exists.
+
+**Cause**: SailPoint's retry logic may not correctly handle 409.
+
+**Fix**: SailPoint should detect 409 and send a PUT (update) instead of retrying CREATE. This is expected behavior — ensure SailPoint's connector is configured to handle this.
+
+### 400 Bad Request on PATCH — "User not found"
+
+**Symptom**: SailPoint sends a PATCH to add a user to a group, but the user doesn't exist.
+
+**Cause**: The user was created in SailPoint but not yet synced to IAM Protocol Engine (async delay).
+
+**Fix**: Ensure the provisioning order sets correct dependencies — users must be provisioned before group membership PATCH operations.
+
+## See Also
+
+- [SCIM 2.0 Overview](/docs/scim/overview) — Protocol fundamentals and endpoint reference
+- [SCIM /Users CRUD](/docs/scim/users) — User resource endpoint details
+- [SCIM /Groups + Membership](/docs/scim/groups) — Group membership management

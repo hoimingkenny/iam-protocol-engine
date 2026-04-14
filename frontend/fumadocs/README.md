@@ -1,4 +1,4 @@
-# IAM Docs Studio
+# Docstash
 
 Interactive docs workspace for the IAM Protocol Engine, built with Next.js and Fumadocs.
 

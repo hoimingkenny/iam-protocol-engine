@@ -1,11 +1,20 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import { BrandMark } from '@/components/brand-mark';
 import { appName, gitConfig, studioRoute } from './shared';
 import { BookOpenText, Compass, ExternalLink, FileCode2 } from 'lucide-react';
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: appName,
+      title: (
+        <span className="inline-flex items-center gap-2 font-semibold">
+          <BrandMark className="size-9" />
+          <span>
+            <span className="font-extrabold">Doc</span>
+            <span className="font-medium">stash</span>
+          </span>
+        </span>
+      ),
       transparentMode: 'top',
     },
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
