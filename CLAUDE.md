@@ -84,6 +84,13 @@ Current branch: `main`. All phases complete (Bootstrap, OAuth 2.0 Core, OIDC Lay
 
 ## Git Workflow
 
+### Branch First — Never Commit to main Directly
+
+**Never make code changes on the `main` branch.** Always branch out first:
+- For new work: `git checkout -b <branch-name>` from `main` or the appropriate `phase-N-develop`
+- For Phase 11+: work on `phase-11-develop` or create task branches from it
+- Only merge to `main` after review and testing
+
 ### Branch Strategy
 
 Each phase has its own integration branch (`phase-N-develop`) branched from `main`. Task branches are created from `phase-N-develop` and merged back when done. When all tasks complete, `phase-N-develop` is merged into `main`.
